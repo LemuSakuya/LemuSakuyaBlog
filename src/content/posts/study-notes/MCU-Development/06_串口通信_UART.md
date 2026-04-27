@@ -1,5 +1,5 @@
 ---
-title: "串口通信_UART"
+title: "串口通信 UART"
 published: 2026-04-27
 description: "《单片机开发》学习笔记：串口通信_UART"
 tags: [学习笔记, 单片机开发]

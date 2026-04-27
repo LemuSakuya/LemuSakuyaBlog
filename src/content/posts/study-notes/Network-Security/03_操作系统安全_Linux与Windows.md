@@ -1,5 +1,5 @@
 ---
-title: "操作系统安全_Linux与Windows"
+title: "操作系统安全（Linux与Windows）"
 published: 2026-04-27
 description: "《网络安全》学习笔记：操作系统安全_Linux与Windows"
 tags: [学习笔记, 网络安全]

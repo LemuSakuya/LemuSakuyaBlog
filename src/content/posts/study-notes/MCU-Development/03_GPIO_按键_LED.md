@@ -1,5 +1,5 @@
 ---
-title: "GPIO_按键_LED"
+title: "GPIO、按键与LED"
 published: 2026-04-27
 description: "《单片机开发》学习笔记：GPIO_按键_LED"
 tags: [学习笔记, 单片机开发]

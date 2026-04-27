@@ -1,5 +1,5 @@
 ---
-title: "Web应用安全_OWASP_Top10"
+title: "Web应用安全（OWASP Top10深入）"
 published: 2026-04-27
 description: "《网络安全》学习笔记：Web应用安全_OWASP_Top10"
 tags: [学习笔记, 网络安全]

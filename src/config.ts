@@ -469,7 +469,7 @@ export const shareConfig: ShareConfig = {
 export const announcementConfig: AnnouncementConfig = {
 	title: "LemuSakuya的个人博客网站堂堂登场", // 公告标题，填空使用i18n字符串Key.announcement
 	content:
-		"这一天终于来到了！！经过长期的策划以及愚蠢的项目策划书的拖延，我终于部署好了我的个人博客，真的很感谢Mizuki，用这么好的模版让我舒爽一整天！！！", // 公告内容
+		"这一天终于来到了！！经过长期的策划以及愚蠢的大创项目策划书的拖延，我终于部署好了我的个人博客，真的很感谢Mizuki，用这么好的模版让我舒爽一整天！！！", // 公告内容
 	closable: true, // 允许用户关闭公告
 	link: {
 		enable: false, // 启用链接
