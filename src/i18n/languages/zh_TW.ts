@@ -66,8 +66,8 @@ export const zh_TW: Translation = {
 	[Key.devicesViewDetails]: "查看詳情",
 
 	// 番劇頁面
-	[Key.animeTitle]: "我的追番記錄",
-	[Key.animeSubtitle]: "記錄我的二次元之旅",
+	[Key.animeTitle]: "咲夜の観測記録",
+	[Key.animeSubtitle]: "記錄二次元之旅",
 	[Key.animeStatusWatching]: "在看",
 	[Key.animeStatusCompleted]: "看過",
 	[Key.animeStatusPlanned]: "想看",
@@ -102,7 +102,7 @@ export const zh_TW: Translation = {
 	[Key.backToHome]: "返回首頁",
 
 	// 音樂播放器
-	[Key.musicPlayer]: "音樂播放器",
+	[Key.musicPlayer]: "🌸 咲夜の秘密メロディ",
 	[Key.musicPlayerShow]: "顯示音樂播放器",
 	[Key.musicPlayerHide]: "隱藏播放器",
 	[Key.musicPlayerExpand]: "展開音樂播放器",
