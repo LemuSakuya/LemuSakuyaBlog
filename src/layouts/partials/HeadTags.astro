@@ -13,8 +13,6 @@ import {
 	DEFAULT_THEME,
 	LIGHT_MODE,
 } from "../../constants/constants";
-import { defaultFavicons } from "../../constants/icon";
-import type { Favicon } from "../../types/config";
 import { url } from "../../utils/url-utils";
 
 interface Props {
@@ -42,8 +40,7 @@ const {
 const keywords = siteConfig.keywords;
 
 // Favicons
-const favicons: Favicon[] =
-	siteConfig.favicon.length > 0 ? siteConfig.favicon : defaultFavicons;
+const favicons = siteConfig.favicon;
 ---
 
 <!-- SEO Meta Tags -->
