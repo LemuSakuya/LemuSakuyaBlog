@@ -27,6 +27,8 @@ const getCategoryText = (category: string) => {
 			return i18n(I18nKey.projectsMobile);
 		case "desktop":
 			return i18n(I18nKey.projectsDesktop);
+		case "software":
+			return i18n(I18nKey.projectsSoftware);
 		case "other":
 			return i18n(I18nKey.projectsOther);
 		case UNCATEGORIZED:
@@ -44,6 +46,8 @@ const getCategoryIcon = (category: string) => {
 			return "material-symbols:smartphone";
 		case "desktop":
 			return "material-symbols:desktop-windows";
+		case "software":
+			return "material-symbols:terminal";
 		case "other":
 			return "material-symbols:widgets";
 		default:

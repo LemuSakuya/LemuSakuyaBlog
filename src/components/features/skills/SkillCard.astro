@@ -10,6 +10,8 @@ const skillColor = skill.color || "#3B82F6";
 
 const getLevelText = (level: string) => {
 	switch (level) {
+		case "unstarted":
+			return "未入门";
 		case "expert":
 			return i18n(I18nKey.skillsExpert);
 		case "advanced":
@@ -38,7 +40,99 @@ const getLevelWidth = (level: string) => {
 	}
 };
 
-const formatExperience = (exp: { years: number; months: number }) => {
+const getLevelFromExperience = (
+	exp?: { years: number; months: number },
+): "unstarted" | "beginner" | "intermediate" | "advanced" | "expert" => {
+	if (!exp) {
+		return "unstarted";
+	}
+
+	const totalMonths = exp.years * 12 + exp.months;
+
+	// Dynamic level thresholds by duration:
+	// expert > 3 years, advanced > 2 years, intermediate > 1 year, beginner <= 1 year
+	if (totalMonths > 36) {
+		return "expert";
+	}
+	if (totalMonths > 24) {
+		return "advanced";
+	}
+	if (totalMonths > 12) {
+		return "intermediate";
+	}
+	return "beginner";
+};
+
+const warnInvalidSkillDate = (field: "startedAt" | "endedAt", rawValue: string) => {
+	if (!import.meta.env.DEV) {
+		return;
+	}
+	console.warn(
+		`[skills] Invalid ${field} for "${skill.id}" (${skill.name}): "${rawValue}". Expected format: YYYY-MM`,
+	);
+};
+
+const parseSkillYearMonth = (
+	value: string | undefined,
+	field: "startedAt" | "endedAt",
+): { year: number; month: number } | null => {
+	if (!value) {
+		return null;
+	}
+
+	const match = value.trim().match(/^(\d{4})-(\d{2})$/);
+	if (!match) {
+		warnInvalidSkillDate(field, value);
+		return null;
+	}
+
+	const year = Number(match[1]);
+	const month = Number(match[2]);
+	if (!Number.isInteger(year) || !Number.isInteger(month)) {
+		warnInvalidSkillDate(field, value);
+		return null;
+	}
+	if (month < 1 || month > 12) {
+		warnInvalidSkillDate(field, value);
+		return null;
+	}
+
+	return { year, month };
+};
+
+const getDurationFromDates = (
+	startedAt?: string,
+	endedAt?: string,
+): { years: number; months: number } | null => {
+	const start = parseSkillYearMonth(startedAt, "startedAt");
+	if (!start) {
+		return null;
+	}
+
+	const now = new Date();
+	const end = parseSkillYearMonth(endedAt, "endedAt") || {
+		year: now.getFullYear(),
+		month: now.getMonth() + 1,
+	};
+
+	const startTotalMonths = start.year * 12 + (start.month - 1);
+	const endTotalMonths = end.year * 12 + (end.month - 1);
+
+	if (startTotalMonths > endTotalMonths) {
+		return null;
+	}
+
+	const diffTotalMonths = endTotalMonths - startTotalMonths;
+	const years = Math.floor(diffTotalMonths / 12);
+	const months = diffTotalMonths % 12;
+
+	return { years, months };
+};
+
+const formatExperience = (exp?: { years: number; months: number }) => {
+	if (!exp) {
+		return "";
+	}
 	const parts: string[] = [];
 	if (exp.years > 0) {
 		parts.push(`${exp.years} ${i18n(I18nKey.skillYears)}`);
@@ -48,6 +142,24 @@ const formatExperience = (exp: { years: number; months: number }) => {
 	}
 	return parts.join(" ");
 };
+
+const computedExperience = getDurationFromDates(skill.startedAt, skill.endedAt);
+const displayExperience = formatExperience(computedExperience || undefined);
+const displayLevel = getLevelFromExperience(computedExperience || undefined);
+const getProgressWidthFromExperience = (
+	exp?: { years: number; months: number },
+): string => {
+	if (!exp) {
+		return "0%";
+	}
+
+	// Map duration to progress with a 3-year cap:
+	// 0 months -> 0%, 36 months+ -> 100%
+	const totalMonths = exp.years * 12 + exp.months;
+	const percentage = Math.min((totalMonths / 36) * 100, 100);
+	return `${Math.max(0, percentage)}%`;
+};
+const progressWidth = getProgressWidthFromExperience(computedExperience || undefined);
 ---
 
 <div
@@ -79,12 +191,14 @@ const formatExperience = (exp: { years: number; months: number }) => {
 					<span
 						class="shrink-0 ml-2 px-2 py-0.5 text-xs rounded-md bg-[var(--primary)]/10 text-[var(--primary)] font-medium"
 					>
-						{getLevelText(skill.level)}
+						{getLevelText(displayLevel)}
 					</span>
 				</div>
-				<p class="text-xs text-black/50 dark:text-white/50">
-					{formatExperience(skill.experience)}
-				</p>
+				{displayExperience && (
+					<p class="text-xs text-black/50 dark:text-white/50">
+						{displayExperience}
+					</p>
+				)}
 			</div>
 		</div>
 
@@ -97,7 +211,7 @@ const formatExperience = (exp: { years: number; months: number }) => {
 		<div class="mt-3 w-full bg-[var(--btn-regular-bg)] rounded-full h-1.5">
 			<div
 				class="h-1.5 rounded-full transition-all duration-500"
-				style={`width: ${getLevelWidth(skill.level)}; background-color: ${skillColor}`}
+				style={`width: ${progressWidth}; background-color: ${skillColor}`}
 			>
 			</div>
 		</div>

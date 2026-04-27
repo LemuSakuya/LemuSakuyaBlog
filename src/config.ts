@@ -315,17 +315,6 @@ export const navBarConfig: NavBarConfig = {
 					url: "/diary/",
 					icon: "material-symbols:book",
 				},
-				{
-					name: "Gallery",
-					url: "/albums/",
-					icon: "material-symbols:photo-library",
-				},
-				{
-					name: "Devices",
-					url: "/devices/",
-					icon: "material-symbols:devices",
-					external: false,
-				},
 			],
 		},
 		{
@@ -334,7 +323,7 @@ export const navBarConfig: NavBarConfig = {
 			icon: "material-symbols:info",
 			children: [
 				{
-					name: "About",
+					name: "技术支持",
 					url: "/about/",
 					icon: "material-symbols:person",
 				},
@@ -371,7 +360,7 @@ export const navBarConfig: NavBarConfig = {
 };
 
 export const profileConfig: ProfileConfig = {
-	avatar: "assets/images/avatar.webp", // 相对于 /src 目录。如果以 '/' 开头，则相对于 /public 目录
+	avatar: "/assets/home/LemuSakuyaAvatar.webp", // 使用 public 目录下资源，避免 src 相对路径丢失
 	name: "レム・咲く夜",
 	bio: "好きを、とじこめないで。",
 	typewriter: {

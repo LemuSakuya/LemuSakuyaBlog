@@ -143,6 +143,7 @@ export const zh_TW: Translation = {
 	[Key.projectsWeb]: "網頁應用",
 	[Key.projectsMobile]: "移動應用",
 	[Key.projectsDesktop]: "桌面應用",
+	[Key.projectsSoftware]: "軟體開發",
 	[Key.projectsOther]: "其他",
 	[Key.projectTechStack]: "技術堆疊",
 	[Key.projectLiveDemo]: "線上展示",

@@ -149,6 +149,7 @@ export const ja: Translation = {
 	[Key.projectsWeb]: "ウェブアプリ",
 	[Key.projectsMobile]: "モバイルアプリ",
 	[Key.projectsDesktop]: "デスクトップアプリ",
+	[Key.projectsSoftware]: "ソフトウェア開発",
 	[Key.projectsOther]: "その他",
 	[Key.projectTechStack]: "技術スタック",
 	[Key.projectLiveDemo]: "ライブデモ",
