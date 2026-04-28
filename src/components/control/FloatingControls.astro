@@ -5,6 +5,7 @@ import { musicPlayerConfig, siteConfig } from "../../config";
 import FloatingTOC from "../features/toc/FloatingTOC.astro";
 import BackToHome from "./BackToHome.astro";
 import BackToTop from "./BackToTop.astro";
+import LikeButton from "../widgets/LikeButton.svelte";
 import MusicFabButton from "./MusicFabButton.svelte";
 
 interface Props {
@@ -31,6 +32,14 @@ const { headings = [] } = Astro.props;
 			</div>
 		)
 	}
+	<div class="floating-control-item" data-control-key="like">
+		<LikeButton
+			type="global"
+			showLabel={true}
+			tooltipText="如果喜欢我做的个人博客可以点个爱心喵qwq，谢谢你ovo"
+			client:only="svelte"
+		/>
+	</div>
 	<div class="floating-control-item" data-control-key="home">
 		<BackToHome />
 	</div>

@@ -16,6 +16,7 @@ import {
 } from "@components/features/posts";
 import License from "@components/misc/License.astro";
 import Markdown from "@components/misc/Markdown.astro";
+import LikeButton from "@components/widgets/LikeButton.svelte";
 import I18nKey from "@i18n/i18nKey";
 import { i18n } from "@i18n/translation";
 import MainGridLayout from "@layouts/MainGridLayout.astro";
@@ -116,6 +117,7 @@ const jsonLd = {
 	lang={entry.data.lang}
 	setOGTypeArticle={true}
 	postSlug={entry.id}
+	postId={entry.id}
 	headings={headings}
 >
 	<script
@@ -251,6 +253,16 @@ const jsonLd = {
 					</>
 				)
 			}
+
+			<!-- 爱心点赞按钮 -->
+			<div class="mt-8 mb-8 flex items-center">
+				<LikeButton
+					type="post"
+					postId={entry.id}
+					showLabel={true}
+					client:only="svelte"
+				/>
+			</div>
 		</div>
 	</div>
 

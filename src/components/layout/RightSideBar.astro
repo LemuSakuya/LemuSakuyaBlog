@@ -2,22 +2,44 @@
 import type { MarkdownHeading } from "astro";
 
 import SidebarColumn from "@/components/layout/SidebarColumn.astro";
+import LikeButton from "@components/widgets/LikeButton.svelte";
 
 interface Props {
 	class?: string;
 	headings?: MarkdownHeading[];
+	postId?: string;
 }
 
-const { class: className, headings } = Astro.props;
+const { class: className, headings, postId } = Astro.props;
 ---
 
-<SidebarColumn
-	side="right"
-	containerId="right-sidebar"
-	stickyId="right-sidebar-sticky"
-	rootClass={`${className ?? ""} w-full`}
-	headings={headings}
-	showMobile={false}
-	showTablet={false}
-	showDesktop={true}
-/>
+<div class={`${className ?? ""} w-full`}>
+	{
+		postId && (
+			<div class="mb-4 rounded-2xl border border-[var(--line-divider)] bg-[var(--card-bg)] p-4 shadow-sm onload-animation">
+				<div class="mb-3 text-sm font-medium text-black/70 dark:text-white/75">
+					如果喜欢这篇文章，可以点个爱心喵
+				</div>
+				<div class="flex justify-center">
+					<LikeButton
+						type="post"
+						postId={postId}
+						showLabel={true}
+						compact={true}
+						client:only="svelte"
+					/>
+				</div>
+			</div>
+		)
+	}
+	<SidebarColumn
+		side="right"
+		containerId="right-sidebar"
+		stickyId="right-sidebar-sticky"
+		rootClass="w-full"
+		headings={headings}
+		showMobile={false}
+		showTablet={false}
+		showDesktop={true}
+	/>
+</div>

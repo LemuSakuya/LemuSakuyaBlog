@@ -31,6 +31,7 @@ interface Props {
 	lang?: string;
 	setOGTypeArticle?: boolean;
 	postSlug?: string;
+	postId?: string;
 	headings?: MarkdownHeading[];
 }
 
@@ -44,6 +45,7 @@ const {
 	lang,
 	setOGTypeArticle,
 	postSlug,
+	postId,
 	headings = [],
 } = Astro.props;
 const hasBannerCredit = siteConfig.banner.credit.enable;
@@ -203,7 +205,10 @@ const defaultPostListLayout = siteConfig.postListLayout?.defaultMode || "list";
 							<div
 								class={`right-sidebar-container ${rightSidebarClass} ${transparentClass}`}
 							>
-								<RightSideBar headings={headings} />
+								<RightSideBar
+									headings={headings}
+									postId={postId}
+								/>
 							</div>
 						)
 					}

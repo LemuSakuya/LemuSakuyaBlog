@@ -34,7 +34,7 @@ export const siteConfig: SiteConfig = {
 	lang: SITE_LANG,
 
 	themeColor: {
-		hue: 240, // 主题色的默认色相，范围从 0 到 360。例如：红色：0，青色：200，蓝绿色：250，粉色：345
+		hue: 340, // 主题色的默认色相，范围从 0 到 360。例如：红色：0，青色：200，蓝绿色：250，粉色：345
 		fixed: false, // 对访问者隐藏主题色选择器
 	},
 
@@ -59,7 +59,7 @@ export const siteConfig: SiteConfig = {
 		// 顶栏标题图标路径，默认使用 public/assets/home/home.webp
 		icon: "assets/home/LemuSakuyaAvatar.webp",
 		// 网站Logo图片路径
-		logo: "assets/home/default-logo.webp",
+		logo: "assets/home/LemuSakuyaAvatar.webp",
 	},
 
 	// 页面自动缩放配置
@@ -258,12 +258,28 @@ export const fullscreenWallpaperConfig: FullscreenWallpaperConfig = {
 			"/assets/desktop-banner/2.webp",
 			"/assets/desktop-banner/3.webp",
 			"/assets/desktop-banner/4.webp",
+			"/assets/desktop-banner/5.webp",
+			"/assets/desktop-banner/6.webp",
+			"/assets/desktop-banner/7.webp",
+			"/assets/desktop-banner/8.webp",
+			"/assets/desktop-banner/9.webp",
+			"/assets/desktop-banner/10.webp",
+			"/assets/desktop-banner/11.webp",
 		], // 桌面横幅图片
 		mobile: [
 			"/assets/mobile-banner/1.webp",
 			"/assets/mobile-banner/2.webp",
 			"/assets/mobile-banner/3.webp",
 			"/assets/mobile-banner/4.webp",
+			"/assets/mobile-banner/5.webp",
+			"/assets/mobile-banner/6.webp",
+			"/assets/mobile-banner/7.webp",
+			"/assets/mobile-banner/8.webp",
+			"/assets/mobile-banner/9.webp",
+			"/assets/mobile-banner/10.webp",
+			"/assets/mobile-banner/11.webp",
+			"/assets/mobile-banner/12.webp",
+			"/assets/mobile-banner/13.webp",
 		], // 移动横幅图片
 	}, // 使用本地横幅图片
 	position: "center", // 壁纸位置，等同于 object-position
