@@ -1,5 +1,6 @@
 ---
 import { Icon } from "astro-icon/components";
+import { siteConfig } from "@/config";
 
 import I18nKey from "../../../i18n/i18nKey";
 import { i18n } from "../../../i18n/translation";
@@ -27,6 +28,8 @@ interface Props {
 	showWordCount?: boolean;
 	showReadingTime?: boolean;
 	showEncrypted?: boolean;
+	postId?: string;
+	showLikeCount?: boolean;
 }
 
 const {
@@ -45,6 +48,8 @@ const {
 	showWordCount = false,
 	showReadingTime = false,
 	showEncrypted = false,
+	postId,
+	showLikeCount = false,
 } = Astro.props;
 ---
 
@@ -68,6 +73,15 @@ const {
 
     {showReadingTime && minutes && (
         <ReadingTime minutes={minutes} />
+    )}
+
+    {showLikeCount && postId && (
+        <div class="flex items-center post-like-count" data-post-id={postId}>
+            <div class="meta-icon">
+                <Icon name="material-symbols:favorite-outline-rounded" class="text-xl"></Icon>
+            </div>
+            <span class="text-50 text-sm font-medium like-count-display">0</span>
+        </div>
     )}
 
     {!showOnlyBasicMeta && (
@@ -146,6 +160,98 @@ const {
         document.addEventListener('DOMContentLoaded', fetchPageViews);
     } else {
         fetchPageViews();
+    }
+</script>
+)}
+
+{showLikeCount && (
+<script is:inline define:vars={{
+    abacusBase: "https://abacus.jasoncameron.dev",
+    namespace: new URL(siteConfig.siteURL).hostname.replace(/[^a-zA-Z0-9_-]/g, "-")
+}}>
+    function safeKey(raw) {
+        if (raw.length <= 32) return raw;
+        let h = 0;
+        for (let i = 0; i < raw.length; i++) {
+            h = ((h << 5) - h + raw.charCodeAt(i)) | 0;
+        }
+        return `${raw.slice(0, 20)}-${(h >>> 0).toString(36)}`;
+    }
+
+    async function fetchLikeCounts() {
+        const containers = document.querySelectorAll(".post-like-count[data-post-id]");
+        if (!containers.length) return;
+
+        await Promise.all(Array.from(containers).map(async (container) => {
+            const postId = container.dataset.postId;
+            if (!postId) return;
+
+            const display = container.querySelector(".like-count-display");
+
+            function toFiniteNumber(v) {
+                const n = Number(v);
+                return Number.isFinite(n) ? n : null;
+            }
+
+            function getPendingHits(id) {
+                const pending = toFiniteNumber(localStorage.getItem(`like-pending-hits-post-${id}`));
+                return pending && pending > 0 ? Math.floor(pending) : 0;
+            }
+
+            function getCachedServerCount(id) {
+                const cached = toFiniteNumber(localStorage.getItem(`like-server-count-post-${id}`));
+                const legacy = toFiniteNumber(localStorage.getItem(`like-count-post-${id}`));
+                return (cached && cached >= 0 ? Math.floor(cached) : 0) ||
+                    (legacy && legacy >= 0 ? Math.floor(legacy) : 0) ||
+                    0;
+            }
+
+            try {
+                const localServer = getCachedServerCount(postId);
+                const localPending = getPendingHits(postId);
+                if (display) display.textContent = String(Math.max(0, localServer + localPending));
+            } catch {
+                // ignore localStorage read errors
+            }
+
+            const key = safeKey(`post-${postId}`);
+            const url = `${abacusBase}/get/${encodeURIComponent(namespace)}/${encodeURIComponent(key)}`;
+
+            try {
+                const res = await fetch(url);
+                if (!res.ok) return;
+                const data = await res.json();
+                const value = typeof data?.value === "number" ? data.value : 0;
+
+                let pendingHits = 0;
+                try {
+                    pendingHits = getPendingHits(postId);
+                } catch {
+                    // ignore localStorage read errors
+                }
+
+                if (display) {
+                    display.textContent = String(Math.max(0, Math.floor(value) + pendingHits));
+                }
+
+                try {
+                    localStorage.setItem(
+                        `like-server-count-post-${postId}`,
+                        String(Math.max(0, Math.floor(value))),
+                    );
+                } catch {
+                    // ignore localStorage write errors
+                }
+            } catch {
+                // keep cached/default value when request fails
+            }
+        }));
+    }
+
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", fetchLikeCounts);
+    } else {
+        fetchLikeCounts();
     }
 </script>
 )}

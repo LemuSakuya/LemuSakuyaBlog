@@ -15,7 +15,9 @@
 	let pendingHits = 0;
 	let myClicks = 0;
 	$: count = serverCount + pendingHits;
-	$: hasLiked = myClicks > 0;
+	let isActive = false;
+	let activeTimer: ReturnType<typeof setTimeout> | null = null;
+	$: hasLiked = isActive;
 
 	type Particle = { id: number; x: number; y: number; rot: number };
 	let particleSeq = 0;
@@ -37,6 +39,10 @@
 		type === "post" ? `like-my-clicks-post-${postId}` : "like-my-clicks-global";
 	const countCacheKey =
 		type === "post" ? `like-server-count-post-${postId}` : "like-server-count-global";
+	const pendingHitsKey =
+		type === "post"
+			? `like-pending-hits-post-${postId}`
+			: "like-pending-hits-global";
 
 	let detach: (() => void) | null = null;
 	let unsubscribe: (() => void) | null = null;
@@ -52,7 +58,11 @@
 		}, 700);
 	}
 
-	function loadInitialFromStorage(): { serverCount: number; myClicks: number } {
+	function loadInitialFromStorage(): {
+		serverCount: number;
+		myClicks: number;
+		pendingHits: number;
+	} {
 		const cachedCount = Number(localStorage.getItem(countCacheKey));
 		const legacyCount = Number(localStorage.getItem(legacyCountKey));
 		const count =
@@ -68,9 +78,16 @@
 			clicks = 1;
 		}
 
+		const cachedPending = Number(localStorage.getItem(pendingHitsKey));
+		const pending =
+			Number.isFinite(cachedPending) && cachedPending > 0
+				? Math.floor(cachedPending)
+				: 0;
+
 		return {
 			serverCount: Math.max(0, count),
 			myClicks: Math.max(0, clicks),
+			pendingHits: pending,
 		};
 	}
 
@@ -92,8 +109,27 @@
 		}
 	}
 
+	function persistPendingHits(n: number) {
+		try {
+			const v = Math.max(0, Math.floor(n));
+			if (v === 0) {
+				localStorage.removeItem(pendingHitsKey);
+			} else {
+				localStorage.setItem(pendingHitsKey, String(v));
+			}
+		} catch {
+			/* ignore */
+		}
+	}
+
 	function handleLike() {
 		if (isLoading) return;
+		if (activeTimer) clearTimeout(activeTimer);
+		isActive = true;
+		activeTimer = setTimeout(() => {
+			isActive = false;
+			activeTimer = null;
+		}, 320);
 		spawnHeartParticle();
 		likeApi?.click();
 	}
@@ -110,6 +146,7 @@
 		likeApi = attachBucket(namespace, key, {
 			onServerCountPersist: persistServerCount,
 			onMyClicksPersist: persistMyClicks,
+			onPendingHitsPersist: persistPendingHits,
 			loadInitial: loadInitialFromStorage,
 		});
 
@@ -122,6 +159,7 @@
 		isLoading = false;
 
 		detach = () => {
+			if (activeTimer) clearTimeout(activeTimer);
 			unsubscribe?.();
 			likeApi?.detach();
 			unsubscribe = null;
@@ -146,8 +184,8 @@
 				<svg
 					class="h-5 w-5 transition-all duration-300"
 					class:scale-125={hasLiked}
-					class:text-red-500={hasLiked}
-					class:text-gray-400={!hasLiked}
+					class:like-heart-active={hasLiked}
+					class:like-heart-idle={!hasLiked}
 					fill={hasLiked ? "currentColor" : "none"}
 					stroke="currentColor"
 					stroke-width="2"
@@ -184,15 +222,15 @@
 		onclick={handleLike}
 		type="button"
 		aria-disabled={isLoading}
-		class={`flex items-center gap-2 rounded-lg px-3 py-2 transition-all duration-300 hover:bg-red-100 active:scale-95 cursor-pointer dark:hover:bg-red-900/30 ${hasLiked ? "bg-red-50 dark:bg-red-900/20" : ""} ${isLoading ? "opacity-70" : ""}`}
+		class={`flex items-center gap-2 rounded-lg px-3 py-2 transition-all duration-300 active:scale-95 cursor-pointer like-inline-btn ${hasLiked ? "like-inline-btn-active" : ""} ${isLoading ? "opacity-70" : ""}`}
 		title={hasLiked ? "已点赞" : "点赞"}
 		aria-label={hasLiked ? "已点赞" : "点赞"}
 	>
 		<svg
 			class="h-5 w-5 transition-all duration-300"
 			class:scale-125={hasLiked}
-			class:text-red-500={hasLiked}
-			class:text-gray-400={!hasLiked}
+			class:like-heart-active={hasLiked}
+			class:like-heart-idle={!hasLiked}
 			fill={hasLiked ? "currentColor" : "none"}
 			stroke="currentColor"
 			stroke-width="2"
@@ -224,9 +262,17 @@
 		font-weight: 800;
 		font-size: 0.9rem;
 		line-height: 1;
-		color: rgb(239 68 68);
+		color: var(--primary);
 		text-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 		animation: floatUp 700ms ease-out forwards;
+	}
+
+	.like-heart-active {
+		color: var(--primary);
+	}
+
+	.like-heart-idle {
+		color: color-mix(in srgb, var(--primary) 45%, #9ca3af);
 	}
 
 	@keyframes floatUp {
@@ -270,6 +316,22 @@
 			background 0.3s ease;
 	}
 
+	.like-inline-btn:hover {
+		background: color-mix(in srgb, var(--primary) 16%, transparent);
+	}
+
+	:global(.dark) .like-inline-btn:hover {
+		background: color-mix(in srgb, var(--primary) 28%, transparent);
+	}
+
+	.like-inline-btn-active {
+		background: color-mix(in srgb, var(--primary) 12%, transparent);
+	}
+
+	:global(.dark) .like-inline-btn-active {
+		background: color-mix(in srgb, var(--primary) 22%, transparent);
+	}
+
 	.like-fab:hover {
 		box-shadow: var(--shadow-button);
 	}
@@ -297,7 +359,7 @@
 	.like-fab__badge {
 		position: absolute;
 		right: -0.3rem;
-		bottom: -0.28rem;
+		top: -0.28rem;
 		display: inline-flex;
 		min-width: 1.15rem;
 		height: 1.15rem;
@@ -320,6 +382,10 @@
 
 	:global(.dark) .like-fab:hover {
 		box-shadow: var(--shadow-button-dark);
+	}
+
+	button:hover .like-heart-idle {
+		color: color-mix(in srgb, var(--primary) 62%, #9ca3af);
 	}
 
 	@media (max-width: 768px) {

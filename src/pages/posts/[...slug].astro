@@ -13,6 +13,7 @@ import {
 import { ReadingTime, WordCount } from "@components/features/posts/atoms";
 import License from "@components/misc/License.astro";
 import Markdown from "@components/misc/Markdown.astro";
+import LikeButton from "@components/widgets/LikeButton.svelte";
 import MainGridLayout from "@layouts/MainGridLayout.astro";
 import { getRelatedPosts, getSortedPosts } from "@utils/content-utils";
 import { hasCustomPermalink, initPostIdMap } from "@utils/permalink-utils";
@@ -215,6 +216,17 @@ const jsonLd = {
 				{},
 			]}
 		>
+			<!-- like button (top-right) -->
+			<div class="absolute top-4 right-4 z-20 onload-animation">
+				<LikeButton
+					type="post"
+					postId={entry.id}
+					showLabel={true}
+					compact={true}
+					client:only="svelte"
+				/>
+			</div>
+
 			<!-- word count and reading time -->
 			<div
 				class="flex flex-row text-black/30 dark:text-white/30 gap-5 mb-3 transition onload-animation"

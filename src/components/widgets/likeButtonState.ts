@@ -42,6 +42,8 @@ const HIT_INTERVAL_MS = 350;
 const POLL_MS = 30_000;
 const ERR_BACKOFF_MS = 1500;
 const RATE429_DEFAULT_MS = 2000;
+const DAILY_LIKE_LIMIT = 25;
+const DAILY_LIKE_KEY_PREFIX = "like-daily-total";
 
 export type LikeBucketState = {
 	serverCount: number;
@@ -82,6 +84,47 @@ function parseRetryAfterMs(res: Response): number {
 	if (!Number.isFinite(n) || n <= 0) return RATE429_DEFAULT_MS;
 	// Abacus documents ms (not seconds).
 	return n;
+}
+
+function getTodayLocalDateKey(): string {
+	const now = new Date();
+	const y = now.getFullYear();
+	const m = String(now.getMonth() + 1).padStart(2, "0");
+	const d = String(now.getDate()).padStart(2, "0");
+	return `${y}-${m}-${d}`;
+}
+
+function getDailyLikeStorageKey(dateKey = getTodayLocalDateKey()): string {
+	return `${DAILY_LIKE_KEY_PREFIX}-${dateKey}`;
+}
+
+function getDailyLikeCountNow(dateKey = getTodayLocalDateKey()): number {
+	try {
+		const n = Number(localStorage.getItem(getDailyLikeStorageKey(dateKey)));
+		if (!Number.isFinite(n) || n < 0) return 0;
+		return Math.floor(n);
+	} catch {
+		return 0;
+	}
+}
+
+function setDailyLikeCountNow(count: number, dateKey = getTodayLocalDateKey()) {
+	try {
+		localStorage.setItem(
+			getDailyLikeStorageKey(dateKey),
+			String(Math.max(0, Math.floor(count))),
+		);
+	} catch {
+		/* ignore */
+	}
+}
+
+function tryConsumeDailyLikeQuota(): boolean {
+	const dateKey = getTodayLocalDateKey();
+	const current = getDailyLikeCountNow(dateKey);
+	if (current >= DAILY_LIKE_LIMIT) return false;
+	setDailyLikeCountNow(current + 1, dateKey);
+	return true;
 }
 
 async function runQueue(meta: BucketMeta) {
@@ -172,14 +215,16 @@ export function attachBucket(
 	handlers: {
 		onServerCountPersist: (n: number) => void;
 		onMyClicksPersist: (n: number) => void;
+		onPendingHitsPersist: (n: number) => void;
 		loadInitial: () => {
 			serverCount: number;
 			myClicks: number;
+			pendingHits: number;
 		};
 	},
 ): {
 	state: Store<LikeBucketState>;
-	click: () => void;
+	click: () => boolean;
 	refresh: () => Promise<void>;
 	detach: () => void;
 } {
@@ -191,6 +236,7 @@ export function attachBucket(
 		...s,
 		serverCount: Math.max(s.serverCount, init.serverCount),
 		myClicks: Math.max(s.myClicks, init.myClicks),
+		pendingHits: Math.max(s.pendingHits, init.pendingHits),
 	}));
 
 	async function refresh() {
@@ -216,6 +262,10 @@ export function attachBucket(
 	}
 
 	function click() {
+		if (!tryConsumeDailyLikeQuota()) {
+			return false;
+		}
+
 		meta.state.update((s) => ({
 			...s,
 			myClicks: s.myClicks + 1,
@@ -224,6 +274,7 @@ export function attachBucket(
 
 		const st = meta.state.get();
 		handlers.onMyClicksPersist(st.myClicks);
+		handlers.onPendingHitsPersist(st.pendingHits);
 
 		try {
 			meta.bc?.postMessage({ type: "myhit" });
@@ -232,6 +283,7 @@ export function attachBucket(
 		}
 
 		void runQueue(meta);
+		return true;
 	}
 
 	function onBcMessage(ev: MessageEvent) {
@@ -259,7 +311,13 @@ export function attachBucket(
 
 	const unsubPersist = meta.state.subscribe((s) => {
 		handlers.onServerCountPersist(s.serverCount);
+		handlers.onPendingHitsPersist(s.pendingHits);
 	});
+
+	// If we restored pending hits from storage, resume sending them.
+	if (meta.state.get().pendingHits > 0) {
+		void runQueue(meta);
+	}
 
 	function detach() {
 		unsubPersist();

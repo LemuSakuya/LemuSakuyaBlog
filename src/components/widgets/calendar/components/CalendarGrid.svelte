@@ -69,7 +69,7 @@
 				{/if}
 				{#if cell.hasPost && cell.postCount > 1}
 					<span
-						class="absolute top-0.5 right-0.5 text-[9px] opacity-70 scale-75"
+						class="absolute -top-0.5 -right-0.5 inline-flex min-w-[0.88rem] h-[0.88rem] items-center justify-center rounded-full px-0.5 text-[0.58rem] font-bold leading-none text-white bg-[color-mix(in_srgb,var(--primary)_72%,#111827)] shadow-[0_0_0_2px_var(--card-bg)]"
 						>{cell.postCount}</span
 					>
 				{/if}
