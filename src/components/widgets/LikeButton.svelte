@@ -40,14 +40,19 @@
 	async function likeOnce() {
 		if (isLoading || hasLiked) return;
 
+		// 先乐观更新界面，避免接口失败时看起来“没反应”
+		hasLiked = true;
+		count += 1;
+		localStorage.setItem(storageKey, "true");
+
 		try {
 			const response = await fetch(getCountApiUrl("hit"));
 			if (!response.ok) throw new Error("Failed to update like");
 
 			const data = await response.json();
-			count = data.value || count + 1;
-			hasLiked = true;
-			localStorage.setItem(storageKey, "true");
+			if (typeof data.value === "number" && data.value > count) {
+				count = data.value;
+			}
 		} catch (error) {
 			console.error("Failed to update like:", error);
 		}
