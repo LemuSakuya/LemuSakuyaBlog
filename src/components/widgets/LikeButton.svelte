@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from "svelte";
 	import { siteConfig } from "@/config";
+	import { attachBucket, safeKey, type LikeBucketState } from "./likeButtonState";
 
 	export let type: "global" | "post" = "global";
 	export let postId: string | undefined = undefined;
@@ -8,63 +9,135 @@
 	export let compact: boolean = false;
 	export let tooltipText: string | undefined = undefined;
 
-	let count = 0;
 	let isLoading = true;
-	let hasLiked = false;
+
+	let serverCount = 0;
+	let pendingHits = 0;
+	let myClicks = 0;
+	$: count = serverCount + pendingHits;
+	$: hasLiked = myClicks > 0;
+
+	type Particle = { id: number; x: number; y: number; rot: number };
+	let particleSeq = 0;
+	let particles: Particle[] = [];
 
 	const namespace = new URL(siteConfig.siteURL).hostname.replace(
 		/[^a-zA-Z0-9_-]/g,
 		"-",
 	);
-	const key = type === "post" ? `post-${postId || "unknown"}` : "global";
-	const storageKey =
+	const rawKey = type === "post" ? `post-${postId || "unknown"}` : "global";
+	const key = safeKey(rawKey);
+
+	const legacyLikedKey =
 		type === "post" ? `liked-post-${postId}` : "liked-global";
+	const legacyCountKey =
+		type === "post" ? `like-count-post-${postId}` : "like-count-global";
 
-	function getCountApiUrl(action: "get" | "hit") {
-		return `https://api.countapi.xyz/${action}/${encodeURIComponent(namespace)}/${encodeURIComponent(key)}`;
+	const myClicksKey =
+		type === "post" ? `like-my-clicks-post-${postId}` : "like-my-clicks-global";
+	const countCacheKey =
+		type === "post" ? `like-server-count-post-${postId}` : "like-server-count-global";
+
+	let detach: (() => void) | null = null;
+	let unsubscribe: (() => void) | null = null;
+
+	function spawnHeartParticle() {
+		const id = ++particleSeq;
+		const x = (Math.random() - 0.5) * 18;
+		const y = -10 - Math.random() * 8;
+		const rot = (Math.random() - 0.5) * 30;
+		particles = [...particles, { id, x, y, rot }];
+		setTimeout(() => {
+			particles = particles.filter((p) => p.id !== id);
+		}, 700);
 	}
 
-	onMount(async () => {
-		try {
-			const response = await fetch(getCountApiUrl("get"));
-			const data = await response.json();
-			count = data.value || 0;
-			hasLiked = localStorage.getItem(storageKey) === "true";
-		} catch (error) {
-			console.error("Failed to load likes:", error);
-		} finally {
-			isLoading = false;
+	function loadInitialFromStorage(): { serverCount: number; myClicks: number } {
+		const cachedCount = Number(localStorage.getItem(countCacheKey));
+		const legacyCount = Number(localStorage.getItem(legacyCountKey));
+		const count =
+			(Number.isFinite(cachedCount) ? cachedCount : 0) ||
+			(Number.isFinite(legacyCount) ? legacyCount : 0) ||
+			0;
+
+		const cachedMyClicks = Number(localStorage.getItem(myClicksKey));
+		let clicks = Number.isFinite(cachedMyClicks) ? cachedMyClicks : 0;
+
+		// migrate: old "liked-*" boolean => myClicks = 1
+		if (clicks <= 0 && localStorage.getItem(legacyLikedKey) === "true") {
+			clicks = 1;
 		}
+
+		return {
+			serverCount: Math.max(0, count),
+			myClicks: Math.max(0, clicks),
+		};
+	}
+
+	function persistServerCount(n: number) {
+		try {
+			localStorage.setItem(countCacheKey, String(Math.max(0, n)));
+		} catch {
+			/* ignore */
+		}
+	}
+
+	function persistMyClicks(n: number) {
+		try {
+			localStorage.setItem(myClicksKey, String(Math.max(0, n)));
+			// keep legacy boolean for backwards compatibility (read only elsewhere)
+			if (n > 0) localStorage.setItem(legacyLikedKey, "true");
+		} catch {
+			/* ignore */
+		}
+	}
+
+	function handleLike() {
+		if (isLoading) return;
+		spawnHeartParticle();
+		likeApi?.click();
+	}
+
+	let likeApi:
+		| {
+				state: { subscribe: (fn: (s: LikeBucketState) => void) => () => void };
+				click: () => void;
+				detach: () => void;
+		  }
+		| null = null;
+
+	onMount(() => {
+		likeApi = attachBucket(namespace, key, {
+			onServerCountPersist: persistServerCount,
+			onMyClicksPersist: persistMyClicks,
+			loadInitial: loadInitialFromStorage,
+		});
+
+		unsubscribe = likeApi.state.subscribe((s) => {
+			serverCount = s.serverCount;
+			pendingHits = s.pendingHits;
+			myClicks = s.myClicks;
+		});
+
+		isLoading = false;
+
+		detach = () => {
+			unsubscribe?.();
+			likeApi?.detach();
+			unsubscribe = null;
+			likeApi = null;
+		};
+
+		return detach;
 	});
-
-	async function likeOnce() {
-		if (isLoading || hasLiked) return;
-
-		// 先乐观更新界面，避免接口失败时看起来“没反应”
-		hasLiked = true;
-		count += 1;
-		localStorage.setItem(storageKey, "true");
-
-		try {
-			const response = await fetch(getCountApiUrl("hit"));
-			if (!response.ok) throw new Error("Failed to update like");
-
-			const data = await response.json();
-			if (typeof data.value === "number" && data.value > count) {
-				count = data.value;
-			}
-		} catch (error) {
-			console.error("Failed to update like:", error);
-		}
-	}
 </script>
 
 {#if compact || tooltipText}
 	<div class="relative inline-flex w-fit group">
 		<button
-			onclick={likeOnce}
+			onclick={handleLike}
 			type="button"
-			aria-disabled={isLoading || hasLiked}
+			aria-disabled={isLoading}
 			class={`like-fab btn-card ${hasLiked ? "active" : ""} ${isLoading ? "is-loading" : ""}`}
 			title={hasLiked ? "已点赞" : "点赞"}
 			aria-label={hasLiked ? "已点赞" : "点赞"}
@@ -89,6 +162,15 @@
 				<span class="like-fab__badge">{count}</span>
 			{/if}
 		</button>
+		<div class="like-particles" aria-hidden="true">
+			{#each particles as p (p.id)}
+				<span
+					class="heart-particle"
+					style={`--x:${p.x}px;--y:${p.y}px;--r:${p.rot}deg;`}
+					>+1</span
+				>
+			{/each}
+		</div>
 		{#if tooltipText}
 			<div
 				class="pointer-events-none absolute right-full top-1/2 z-50 mr-3 w-[14rem] -translate-y-1/2 translate-x-1 rounded-xl border border-[var(--line-divider)] bg-[var(--card-bg)] px-3.5 py-2.5 text-left text-sm leading-relaxed text-black/80 opacity-0 shadow-lg transition-all duration-200 group-hover:translate-x-0 group-hover:opacity-100 group-focus-within:translate-x-0 group-focus-within:opacity-100 dark:text-white/85"
@@ -99,9 +181,9 @@
 	</div>
 {:else}
 	<button
-		onclick={likeOnce}
+		onclick={handleLike}
 		type="button"
-		aria-disabled={isLoading || hasLiked}
+		aria-disabled={isLoading}
 		class={`flex items-center gap-2 rounded-lg px-3 py-2 transition-all duration-300 hover:bg-red-100 active:scale-95 cursor-pointer dark:hover:bg-red-900/30 ${hasLiked ? "bg-red-50 dark:bg-red-900/20" : ""} ${isLoading ? "opacity-70" : ""}`}
 		title={hasLiked ? "已点赞" : "点赞"}
 		aria-label={hasLiked ? "已点赞" : "点赞"}
@@ -127,6 +209,47 @@
 {/if}
 
 <style>
+	.like-particles {
+		position: absolute;
+		inset: 0;
+		pointer-events: none;
+	}
+
+	.heart-particle {
+		position: absolute;
+		left: 50%;
+		top: 50%;
+		transform: translate(calc(-50% + var(--x)), calc(-50% + var(--y)))
+			rotate(var(--r));
+		font-weight: 800;
+		font-size: 0.9rem;
+		line-height: 1;
+		color: rgb(239 68 68);
+		text-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+		animation: floatUp 700ms ease-out forwards;
+	}
+
+	@keyframes floatUp {
+		0% {
+			opacity: 0;
+			transform: translate(calc(-50% + var(--x)), calc(-50% + var(--y)))
+				rotate(var(--r))
+				scale(0.9);
+		}
+		10% {
+			opacity: 1;
+		}
+		100% {
+			opacity: 0;
+			transform: translate(
+					calc(-50% + var(--x)),
+					calc(-50% + var(--y) - 22px)
+				)
+				rotate(var(--r))
+				scale(1.05);
+		}
+	}
+
 	.like-fab {
 		position: relative;
 		display: inline-flex;
