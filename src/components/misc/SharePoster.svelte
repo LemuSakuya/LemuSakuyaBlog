@@ -36,6 +36,7 @@
 	let showModal = false;
 	let posterImage: string | null = null;
 	let generating = false;
+	let posterHue = 140;
 	let themeColor = "#558e88";
 
 	function isDarkMode(): boolean {
@@ -44,36 +45,55 @@
 
 	function getPosterColors() {
 		const dark = isDarkMode();
+		const accentLight = dark ? 72 : 34;
+		const accentMid = dark ? 60 : 82;
+		const accentDeep = dark ? 78 : 40;
+		const descBgOpacity = dark ? 0.32 : 0.45;
+
 		return {
 			background: dark ? "#1a1a1a" : "#ffffff",
 			title: dark ? "#e5e5e5" : "#111827",
-			descBg: dark ? "#2a2a2a" : "#e5e7eb",
-			descText: dark ? "#a3a3a3" : "#4b5563",
-			separator: dark ? "#2e2e2e" : "#f3f4f6",
-			metaText: dark ? "#6b6b6b" : "#9ca3af",
+			descBg: `hsla(${posterHue}, 58%, ${accentMid}%, ${descBgOpacity})`,
+			descText: `hsl(${posterHue}, 24%, ${accentLight}%)`,
+			separator: `hsl(${posterHue}, 42%, ${accentMid}%)`,
+			metaText: `hsl(${posterHue}, 20%, ${accentLight}%)`,
 			primaryText: dark ? "#d4d4d4" : "#1f2937",
 			qrBg: dark ? "#2a2a2a" : "#ffffff",
 			qrDark: dark ? "#ffffff" : "#000000",
 			qrLight: dark ? "#1a1a1a" : "#ffffff",
 			avatarBorder: dark ? "#2a2a2a" : "#ffffff",
-			dateBg: dark ? "rgba(255, 255, 255, 0.15)" : "rgba(0, 0, 0, 0.3)",
+			dateBg: dark
+				? `hsla(${posterHue}, 42%, ${accentDeep}%, 0.35)`
+				: `hsla(${posterHue}, 42%, 20%, 0.35)`,
 			dateText: dark ? "#e5e5e5" : "#ffffff",
 		};
 	}
 
-	onMount(() => {
+	function syncPosterTheme() {
 		const temp = document.createElement("div");
 		temp.style.color = "var(--primary)";
 		temp.style.display = "none";
 		document.body.appendChild(temp);
 		const computedColor = getComputedStyle(temp).color;
 		document.body.removeChild(temp);
-
 		if (computedColor) {
 			themeColor = computedColor;
 		}
 
+		const rawHue = getComputedStyle(document.documentElement)
+			.getPropertyValue("--hue")
+			.trim();
+		const parsedHue = Number.parseFloat(rawHue);
+		if (!Number.isNaN(parsedHue)) {
+			posterHue = parsedHue;
+		}
+	}
+
+	onMount(() => {
+		syncPosterTheme();
+
 		const observer = new MutationObserver(() => {
+			syncPosterTheme();
 			posterImage = null;
 		});
 		observer.observe(document.documentElement, {
