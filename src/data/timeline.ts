@@ -57,10 +57,10 @@ export const timelineData: TimelineItem[] = [
 		type: "education",
 		startDate: "2021-09-01",
 		endDate: "2024-06-30",
-		location: "Shunde, Guangzhou",
+		location: "Shunde, Guangdong",
 		organization: "Shunde No.1 Middle School",
 		achievements: [
-			"College entrance exam score: 620.6",
+			"College entrance exam score: 595.5",
 			"Received municipal model student award",
 			"Won provincial second prize in math competition",
 			"Won provincial second prize in physics competition",
