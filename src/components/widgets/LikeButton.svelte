@@ -17,7 +17,7 @@
 	$: count = serverCount + pendingHits;
 	let isActive = false;
 	let activeTimer: ReturnType<typeof setTimeout> | null = null;
-	$: hasLiked = isActive;
+	$: hasLiked = myClicks > 0 || isActive;
 
 	type Particle = { id: number; x: number; y: number; rot: number };
 	let particleSeq = 0;
@@ -147,6 +147,11 @@
 			onServerCountPersist: persistServerCount,
 			onMyClicksPersist: persistMyClicks,
 			onPendingHitsPersist: persistPendingHits,
+			localStorageKeys: {
+				myClicks: myClicksKey,
+				serverCount: countCacheKey,
+				pendingHits: pendingHitsKey,
+			},
 			loadInitial: loadInitialFromStorage,
 		});
 

@@ -248,10 +248,29 @@ const {
         }));
     }
 
+    function isPostLikeStorageKey(k) {
+        return (
+            k.startsWith("like-server-count-post-") ||
+            k.startsWith("like-pending-hits-post-") ||
+            k.startsWith("like-my-clicks-post-")
+        );
+    }
+
+    window.addEventListener("storage", (ev) => {
+        const k = ev.key;
+        if (k && isPostLikeStorageKey(k)) {
+            void fetchLikeCounts();
+        }
+    });
+
     if (document.readyState === "loading") {
         document.addEventListener("DOMContentLoaded", fetchLikeCounts);
     } else {
         fetchLikeCounts();
     }
+
+    document.addEventListener("astro:page-load", () => {
+        void fetchLikeCounts();
+    });
 </script>
 )}

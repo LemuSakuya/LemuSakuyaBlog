@@ -59,6 +59,7 @@ type BucketMeta = {
 	bc: BroadcastChannel | null;
 	pollTimer: ReturnType<typeof setInterval> | null;
 	onVis: (() => void) | null;
+	onStorage: ((ev: StorageEvent) => void) | null;
 	namespace: string;
 	key: string;
 };
@@ -201,6 +202,7 @@ export function ensureBucket(namespace: string, key: string): BucketMeta {
 			bc: null,
 			pollTimer: null,
 			onVis: null,
+			onStorage: null,
 			namespace,
 			key,
 		};
@@ -216,6 +218,12 @@ export function attachBucket(
 		onServerCountPersist: (n: number) => void;
 		onMyClicksPersist: (n: number) => void;
 		onPendingHitsPersist: (n: number) => void;
+		/** Keys used for localStorage; enables sync across tabs / windows on the same origin. */
+		localStorageKeys: {
+			myClicks: string;
+			serverCount: string;
+			pendingHits: string;
+		};
 		loadInitial: () => {
 			serverCount: number;
 			myClicks: number;
@@ -293,9 +301,31 @@ export function attachBucket(
 		}
 	}
 
+	function applyStorageSnapshot() {
+		const snap = handlers.loadInitial();
+		meta.state.update((s) => ({
+			...s,
+			serverCount: Math.max(s.serverCount, snap.serverCount),
+			myClicks: Math.max(s.myClicks, snap.myClicks),
+			pendingHits: Math.max(s.pendingHits, snap.pendingHits),
+		}));
+	}
+
+	function onStorage(ev: StorageEvent) {
+		const k = ev.key;
+		if (!k) return;
+		const { myClicks, serverCount, pendingHits } = handlers.localStorageKeys;
+		if (k !== myClicks && k !== serverCount && k !== pendingHits) return;
+		applyStorageSnapshot();
+		void refresh();
+	}
+
 	if (meta.refCount === 1) {
 		meta.bc = new BroadcastChannel(`like-${namespace}-${key}`);
 		meta.bc.addEventListener("message", onBcMessage);
+
+		meta.onStorage = onStorage;
+		window.addEventListener("storage", meta.onStorage);
 
 		meta.onVis = () => {
 			if (document.visibilityState === "visible") void refresh();
@@ -329,6 +359,11 @@ export function attachBucket(
 			if (meta.onVis) {
 				document.removeEventListener("visibilitychange", meta.onVis);
 				meta.onVis = null;
+			}
+
+			if (meta.onStorage) {
+				window.removeEventListener("storage", meta.onStorage);
+				meta.onStorage = null;
 			}
 
 			meta.bc?.removeEventListener("message", onBcMessage);
