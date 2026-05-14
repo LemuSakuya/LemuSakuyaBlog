@@ -86,7 +86,7 @@
 
 		return {
 			serverCount: Math.max(0, count),
-			myClicks: Math.max(0, clicks),
+			myClicks: Math.max(0, clicks) > 0 ? 1 : 0,
 			pendingHits: pending,
 		};
 	}
@@ -101,9 +101,13 @@
 
 	function persistMyClicks(n: number) {
 		try {
-			localStorage.setItem(myClicksKey, String(Math.max(0, n)));
-			// keep legacy boolean for backwards compatibility (read only elsewhere)
-			if (n > 0) localStorage.setItem(legacyLikedKey, "true");
+			const v = Math.max(0, n) > 0 ? 1 : 0;
+			localStorage.setItem(myClicksKey, String(v));
+			if (v > 0) {
+				localStorage.setItem(legacyLikedKey, "true");
+			} else {
+				localStorage.removeItem(legacyLikedKey);
+			}
 		} catch {
 			/* ignore */
 		}
@@ -125,19 +129,25 @@
 	function handleLike() {
 		if (isLoading) return;
 		if (activeTimer) clearTimeout(activeTimer);
-		isActive = true;
-		activeTimer = setTimeout(() => {
+		activeTimer = null;
+
+		const outcome = likeApi?.click();
+		if (outcome === "like") {
+			isActive = true;
+			activeTimer = setTimeout(() => {
+				isActive = false;
+				activeTimer = null;
+			}, 320);
+			spawnHeartParticle();
+		} else {
 			isActive = false;
-			activeTimer = null;
-		}, 320);
-		spawnHeartParticle();
-		likeApi?.click();
+		}
 	}
 
 	let likeApi:
 		| {
 				state: { subscribe: (fn: (s: LikeBucketState) => void) => () => void };
-				click: () => void;
+				click: () => "like" | "unlike" | "limit";
 				detach: () => void;
 		  }
 		| null = null;

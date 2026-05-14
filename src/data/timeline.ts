@@ -84,4 +84,19 @@ export const timelineData: TimelineItem[] = [
 		icon: "material-symbols:code",
 		color: "#7C3AED",
 	},
+	{
+		id: "honor-example-provincial-math",
+		title: "MCM/ICM Honorable Mention",
+		description:
+			"Won the Honorable Mention award in the MCM/ICM competition",
+		type: "achievement",
+		startDate: "2026-02-14",
+		endDate: "2026-05-13",
+		location: "Changsha, Hunan",
+		organization: "Hunan Normal University",
+		achievements: ["Honorable Mention award in the MCM/ICM competition"],
+		icon: "material-symbols:emoji-events",
+		color: "#CA8A04",
+		featured: true,
+	},
 ];

@@ -128,6 +128,13 @@ function tryConsumeDailyLikeQuota(): boolean {
 	return true;
 }
 
+function releaseDailyLikeQuota(): void {
+	const dateKey = getTodayLocalDateKey();
+	const current = getDailyLikeCountNow(dateKey);
+	if (current <= 0) return;
+	setDailyLikeCountNow(current - 1, dateKey);
+}
+
 async function runQueue(meta: BucketMeta) {
 	if (meta.queueRunning) return;
 	meta.queueRunning = true;
@@ -232,7 +239,7 @@ export function attachBucket(
 	},
 ): {
 	state: Store<LikeBucketState>;
-	click: () => boolean;
+	click: () => "like" | "unlike" | "limit";
 	refresh: () => Promise<void>;
 	detach: () => void;
 } {
@@ -240,10 +247,11 @@ export function attachBucket(
 	meta.refCount += 1;
 
 	const init = handlers.loadInitial();
+	const binaryMyClicks = init.myClicks > 0 ? 1 : 0;
 	meta.state.update((s) => ({
 		...s,
 		serverCount: Math.max(s.serverCount, init.serverCount),
-		myClicks: Math.max(s.myClicks, init.myClicks),
+		myClicks: Math.max(s.myClicks, binaryMyClicks),
 		pendingHits: Math.max(s.pendingHits, init.pendingHits),
 	}));
 
@@ -269,14 +277,34 @@ export function attachBucket(
 		}
 	}
 
-	function click() {
+	function click(): "like" | "unlike" | "limit" {
+		const before = meta.state.get();
+		// Binary session like: filled heart when myClicks === 1; second click clears it.
+		if (before.myClicks > 0) {
+			meta.state.update((s) => ({
+				...s,
+				myClicks: 0,
+				pendingHits: Math.max(0, s.pendingHits - 1),
+			}));
+			releaseDailyLikeQuota();
+			const st = meta.state.get();
+			handlers.onMyClicksPersist(st.myClicks);
+			handlers.onPendingHitsPersist(st.pendingHits);
+			try {
+				meta.bc?.postMessage({ type: "refresh" });
+			} catch {
+				/* ignore */
+			}
+			return "unlike";
+		}
+
 		if (!tryConsumeDailyLikeQuota()) {
-			return false;
+			return "limit";
 		}
 
 		meta.state.update((s) => ({
 			...s,
-			myClicks: s.myClicks + 1,
+			myClicks: 1,
 			pendingHits: s.pendingHits + 1,
 		}));
 
@@ -291,7 +319,7 @@ export function attachBucket(
 		}
 
 		void runQueue(meta);
-		return true;
+		return "like";
 	}
 
 	function onBcMessage(ev: MessageEvent) {
@@ -303,11 +331,12 @@ export function attachBucket(
 
 	function applyStorageSnapshot() {
 		const snap = handlers.loadInitial();
+		const bin = snap.myClicks > 0 ? 1 : 0;
 		meta.state.update((s) => ({
 			...s,
 			serverCount: Math.max(s.serverCount, snap.serverCount),
-			myClicks: Math.max(s.myClicks, snap.myClicks),
-			pendingHits: Math.max(s.pendingHits, snap.pendingHits),
+			myClicks: bin,
+			pendingHits: snap.pendingHits,
 		}));
 	}
 
