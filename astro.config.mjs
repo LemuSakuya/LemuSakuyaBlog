@@ -26,6 +26,7 @@ import { GithubCardComponent } from "./src/plugins/rehype-component-github-card.
 import { rehypeImageWidth } from "./src/plugins/rehype-image-width.mjs";
 import { rehypeMermaid } from "./src/plugins/rehype-mermaid.mjs";
 import { rehypeWrapTable } from "./src/plugins/rehype-wrap-table.mjs";
+import { remarkLatexDelimiters } from "./src/plugins/remark-latex-delimiters.mjs";
 import { remarkContent } from "./src/plugins/remark-content.mjs";
 import { parseDirectiveNode } from "./src/plugins/remark-directive-rehype.js";
 import { remarkFixGithubAdmonitions } from "./src/plugins/remark-fix-github-admonitions.js";
@@ -125,6 +126,7 @@ export default defineConfig({
 	markdown: {
 		remarkPlugins: [
 			remarkMath,
+			remarkLatexDelimiters,
 			remarkContent,
 			remarkFixGithubAdmonitions,
 			remarkDirective,

@@ -83,6 +83,9 @@ importers:
       marked:
         specifier: ^16.4.2
         version: 16.4.2
+      mdast-util-from-markdown:
+        specifier: ^2.0.3
+        version: 2.0.3
       node-html-parser:
         specifier: ^7.1.0
         version: 7.1.0
