@@ -1,7 +1,9 @@
 <script lang="ts">
 	import { onMount } from "svelte";
+
 	import { siteConfig } from "@/config";
-	import { attachBucket, safeKey, type LikeBucketState } from "./likeButtonState";
+
+	import { attachBucket, type LikeBucketState,safeKey } from "./likeButtonState";
 
 	export let type: "global" | "post" = "global";
 	export let postId: string | undefined = undefined;
@@ -17,7 +19,7 @@
 	$: count = serverCount + pendingHits;
 	let isActive = false;
 	let activeTimer: ReturnType<typeof setTimeout> | null = null;
-	$: hasLiked = myClicks > 0 || isActive;
+	$: hasLiked = myClicks > 0;
 
 	type Particle = { id: number; x: number; y: number; rot: number };
 	let particleSeq = 0;
@@ -127,8 +129,8 @@
 	}
 
 	function handleLike() {
-		if (isLoading) return;
-		if (activeTimer) clearTimeout(activeTimer);
+		if (isLoading) {return;}
+		if (activeTimer) {clearTimeout(activeTimer);}
 		activeTimer = null;
 
 		const outcome = likeApi?.click();
@@ -174,7 +176,7 @@
 		isLoading = false;
 
 		detach = () => {
-			if (activeTimer) clearTimeout(activeTimer);
+			if (activeTimer) {clearTimeout(activeTimer);}
 			unsubscribe?.();
 			likeApi?.detach();
 			unsubscribe = null;

@@ -18,12 +18,37 @@ export function getDefaultHue(): number {
 	return Number.parseInt(configCarrier.dataset.hue || fallback);
 }
 
+export function isHueFixed(): boolean {
+	const configCarrier = document.getElementById("config-carrier");
+	if (!configCarrier) {
+		return false;
+	}
+	return configCarrier.dataset.hueFixed === "true";
+}
+
 export function getHue(): number {
+	if (isHueFixed()) {
+		// 强制使用站点配置的色相，忽略本地缓存
+		try {
+			localStorage.removeItem("hue");
+		} catch {
+			/* ignore */
+		}
+		return getDefaultHue();
+	}
 	const stored = localStorage.getItem("hue");
 	return stored ? Number.parseInt(stored) : getDefaultHue();
 }
 
 export function setHue(hue: number): void {
+	if (isHueFixed()) {
+		// fixed 模式下不允许覆写主题色
+		const r = document.querySelector(":root") as HTMLElement;
+		if (r) {
+			r.style.setProperty("--hue", String(getDefaultHue()));
+		}
+		return;
+	}
 	localStorage.setItem("hue", String(hue));
 	const r = document.querySelector(":root") as HTMLElement;
 	if (!r) {

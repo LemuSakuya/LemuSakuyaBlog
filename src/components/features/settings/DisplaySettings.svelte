@@ -2,7 +2,7 @@
 	import I18nKey from "@i18n/i18nKey";
 	import { i18n } from "@i18n/translation";
 	import Icon from "@iconify/svelte";
-	import { getDefaultHue, getHue, setHue } from "@utils/setting-utils";
+	import { getDefaultHue, getHue, isHueFixed,setHue } from "@utils/setting-utils";
 	import { onMount } from "svelte";
 
 	import type { DisplaySettingsProps } from "./types";
@@ -12,6 +12,7 @@
 	let hue = 250;
 	let defaultHue = 250;
 	let isMounted = false;
+	let hueFixed = false;
 
 	function resetHue() {
 		hue = defaultHue;
@@ -19,15 +20,17 @@
 
 	onMount(() => {
 		isMounted = true;
+		hueFixed = isHueFixed();
 		defaultHue = getDefaultHue();
 		hue = getHue();
 	});
 
-	$: if (isMounted && (hue || hue === 0)) {
+	$: if (isMounted && !hueFixed && (hue || hue === 0)) {
 		setHue(hue);
 	}
 </script>
 
+{#if !hueFixed}
 <div
 	id="display-setting"
 	class="float-panel float-panel-closed absolute transition-all w-80 right-4 px-4 py-4"
@@ -81,6 +84,7 @@
 		/>
 	</div>
 </div>
+{/if}
 
 <style lang="stylus">
     #display-setting

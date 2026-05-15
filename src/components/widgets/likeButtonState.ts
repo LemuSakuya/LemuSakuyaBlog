@@ -17,7 +17,7 @@ function createStore<T>(initial: T): Store<T> {
 
 	function set(v: T) {
 		value = v;
-		for (const fn of subs) fn(value);
+		for (const fn of subs) {fn(value);}
 	}
 
 	function update(fn: (v: T) => T) {
@@ -39,7 +39,7 @@ function createStore<T>(initial: T): Store<T> {
 
 const ABACUS_BASE = "https://abacus.jasoncameron.dev";
 const HIT_INTERVAL_MS = 350;
-const POLL_MS = 30_000;
+const POLL_MS = 10_000;
 const ERR_BACKOFF_MS = 1500;
 const RATE429_DEFAULT_MS = 2000;
 const DAILY_LIKE_LIMIT = 25;
@@ -80,9 +80,9 @@ function sleep(ms: number) {
 
 function parseRetryAfterMs(res: Response): number {
 	const raw = res.headers.get("Retry-After");
-	if (raw == null || raw === "") return RATE429_DEFAULT_MS;
+	if (raw == null || raw === "") {return RATE429_DEFAULT_MS;}
 	const n = Number(raw);
-	if (!Number.isFinite(n) || n <= 0) return RATE429_DEFAULT_MS;
+	if (!Number.isFinite(n) || n <= 0) {return RATE429_DEFAULT_MS;}
 	// Abacus documents ms (not seconds).
 	return n;
 }
@@ -102,7 +102,7 @@ function getDailyLikeStorageKey(dateKey = getTodayLocalDateKey()): string {
 function getDailyLikeCountNow(dateKey = getTodayLocalDateKey()): number {
 	try {
 		const n = Number(localStorage.getItem(getDailyLikeStorageKey(dateKey)));
-		if (!Number.isFinite(n) || n < 0) return 0;
+		if (!Number.isFinite(n) || n < 0) {return 0;}
 		return Math.floor(n);
 	} catch {
 		return 0;
@@ -123,7 +123,7 @@ function setDailyLikeCountNow(count: number, dateKey = getTodayLocalDateKey()) {
 function tryConsumeDailyLikeQuota(): boolean {
 	const dateKey = getTodayLocalDateKey();
 	const current = getDailyLikeCountNow(dateKey);
-	if (current >= DAILY_LIKE_LIMIT) return false;
+	if (current >= DAILY_LIKE_LIMIT) {return false;}
 	setDailyLikeCountNow(current + 1, dateKey);
 	return true;
 }
@@ -131,12 +131,12 @@ function tryConsumeDailyLikeQuota(): boolean {
 function releaseDailyLikeQuota(): void {
 	const dateKey = getTodayLocalDateKey();
 	const current = getDailyLikeCountNow(dateKey);
-	if (current <= 0) return;
+	if (current <= 0) {return;}
 	setDailyLikeCountNow(current - 1, dateKey);
 }
 
 async function runQueue(meta: BucketMeta) {
-	if (meta.queueRunning) return;
+	if (meta.queueRunning) {return;}
 	meta.queueRunning = true;
 
 	while (meta.state.get().pendingHits > 0) {
@@ -148,7 +148,7 @@ async function runQueue(meta: BucketMeta) {
 		await sleep(wait);
 
 		const st = meta.state.get();
-		if (st.pendingHits <= 0) break;
+		if (st.pendingHits <= 0) {break;}
 
 		try {
 			const res = await fetch(abacusUrl("hit", meta.namespace, meta.key));
@@ -185,7 +185,7 @@ async function runQueue(meta: BucketMeta) {
 }
 
 export function safeKey(raw: string): string {
-	if (raw.length <= 32) return raw;
+	if (raw.length <= 32) {return raw;}
 	let h = 0;
 	for (let i = 0; i < raw.length; i++) {
 		h = ((h << 5) - h + raw.charCodeAt(i)) | 0;
@@ -342,9 +342,9 @@ export function attachBucket(
 
 	function onStorage(ev: StorageEvent) {
 		const k = ev.key;
-		if (!k) return;
+		if (!k) {return;}
 		const { myClicks, serverCount, pendingHits } = handlers.localStorageKeys;
-		if (k !== myClicks && k !== serverCount && k !== pendingHits) return;
+		if (k !== myClicks && k !== serverCount && k !== pendingHits) {return;}
 		applyStorageSnapshot();
 		void refresh();
 	}
@@ -357,9 +357,10 @@ export function attachBucket(
 		window.addEventListener("storage", meta.onStorage);
 
 		meta.onVis = () => {
-			if (document.visibilityState === "visible") void refresh();
+			if (document.visibilityState === "visible") {void refresh();}
 		};
 		document.addEventListener("visibilitychange", meta.onVis);
+		window.addEventListener("focus", meta.onVis);
 
 		meta.pollTimer = setInterval(() => {
 			void refresh();
@@ -382,11 +383,12 @@ export function attachBucket(
 		unsubPersist();
 		meta.refCount -= 1;
 		if (meta.refCount <= 0) {
-			if (meta.pollTimer) clearInterval(meta.pollTimer);
+			if (meta.pollTimer) {clearInterval(meta.pollTimer);}
 			meta.pollTimer = null;
 
 			if (meta.onVis) {
 				document.removeEventListener("visibilitychange", meta.onVis);
+				window.removeEventListener("focus", meta.onVis);
 				meta.onVis = null;
 			}
 

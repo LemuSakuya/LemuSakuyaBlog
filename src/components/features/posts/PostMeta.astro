@@ -1,5 +1,6 @@
 ---
 import { Icon } from "astro-icon/components";
+
 import { siteConfig } from "@/config";
 
 import I18nKey from "../../../i18n/i18nKey";
@@ -170,7 +171,7 @@ const {
     namespace: new URL(siteConfig.siteURL).hostname.replace(/[^a-zA-Z0-9_-]/g, "-")
 }}>
     function safeKey(raw) {
-        if (raw.length <= 32) return raw;
+        if (raw.length <= 32) {return raw;}
         let h = 0;
         for (let i = 0; i < raw.length; i++) {
             h = ((h << 5) - h + raw.charCodeAt(i)) | 0;
@@ -180,11 +181,11 @@ const {
 
     async function fetchLikeCounts() {
         const containers = document.querySelectorAll(".post-like-count[data-post-id]");
-        if (!containers.length) return;
+        if (!containers.length) {return;}
 
         await Promise.all(Array.from(containers).map(async (container) => {
             const postId = container.dataset.postId;
-            if (!postId) return;
+            if (!postId) {return;}
 
             const display = container.querySelector(".like-count-display");
 
@@ -209,7 +210,7 @@ const {
             try {
                 const localServer = getCachedServerCount(postId);
                 const localPending = getPendingHits(postId);
-                if (display) display.textContent = String(Math.max(0, localServer + localPending));
+                if (display) {display.textContent = String(Math.max(0, localServer + localPending));}
             } catch {
                 // ignore localStorage read errors
             }
@@ -219,7 +220,7 @@ const {
 
             try {
                 const res = await fetch(url);
-                if (!res.ok) return;
+                if (!res.ok) {return;}
                 const data = await res.json();
                 const value = typeof data?.value === "number" ? data.value : 0;
 

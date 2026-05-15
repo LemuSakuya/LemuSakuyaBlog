@@ -26,6 +26,7 @@ interface Props {
 
 	// 配置
 	configHue: number;
+	hueFixed?: boolean;
 }
 
 const {
@@ -34,6 +35,7 @@ const {
 	ogImageUrl,
 	setOGTypeArticle = false,
 	configHue,
+	hueFixed = false,
 } = Astro.props;
 
 // 关键词
@@ -104,6 +106,7 @@ const favicons = siteConfig.favicon;
 		DARK_MODE,
 		BANNER_HEIGHT_EXTEND: 30,
 		configHue,
+		hueFixed,
 		pageScaling: siteConfig.pageScaling,
 	}}
 >
@@ -129,8 +132,16 @@ const favicons = siteConfig.favicon;
 		document.documentElement.setAttribute("data-theme", expressiveTheme);
 	}
 
-	// Load the hue from local storage
-	const hue = localStorage.getItem("hue") || configHue;
+	// Load the hue from local storage (or force config hue when fixed)
+	let hue;
+	if (hueFixed) {
+		try {
+			localStorage.removeItem("hue");
+		} catch {}
+		hue = configHue;
+	} else {
+		hue = localStorage.getItem("hue") || configHue;
+	}
 	document.documentElement.style.setProperty("--hue", hue);
 
 	// calculate the --banner-height-extend, which needs to be a multiple of 4 to avoid blurry text
