@@ -48,7 +48,6 @@ const DAILY_LIKE_KEY_PREFIX = "like-daily-total";
 export type LikeBucketState = {
 	serverCount: number;
 	pendingHits: number;
-	myClicks: number;
 };
 
 type BucketMeta = {
@@ -128,13 +127,6 @@ function tryConsumeDailyLikeQuota(): boolean {
 	return true;
 }
 
-function releaseDailyLikeQuota(): void {
-	const dateKey = getTodayLocalDateKey();
-	const current = getDailyLikeCountNow(dateKey);
-	if (current <= 0) {return;}
-	setDailyLikeCountNow(current - 1, dateKey);
-}
-
 async function runQueue(meta: BucketMeta) {
 	if (meta.queueRunning) {return;}
 	meta.queueRunning = true;
@@ -201,7 +193,6 @@ export function ensureBucket(namespace: string, key: string): BucketMeta {
 			state: createStore<LikeBucketState>({
 				serverCount: 0,
 				pendingHits: 0,
-				myClicks: 0,
 			}),
 			queueRunning: false,
 			nextAvailableAt: 0,
@@ -223,23 +214,20 @@ export function attachBucket(
 	key: string,
 	handlers: {
 		onServerCountPersist: (n: number) => void;
-		onMyClicksPersist: (n: number) => void;
 		onPendingHitsPersist: (n: number) => void;
 		/** Keys used for localStorage; enables sync across tabs / windows on the same origin. */
 		localStorageKeys: {
-			myClicks: string;
 			serverCount: string;
 			pendingHits: string;
 		};
 		loadInitial: () => {
 			serverCount: number;
-			myClicks: number;
 			pendingHits: number;
 		};
 	},
 ): {
 	state: Store<LikeBucketState>;
-	click: () => "like" | "unlike" | "limit";
+	click: () => "like" | "limit";
 	refresh: () => Promise<void>;
 	detach: () => void;
 } {
@@ -247,11 +235,9 @@ export function attachBucket(
 	meta.refCount += 1;
 
 	const init = handlers.loadInitial();
-	const binaryMyClicks = init.myClicks > 0 ? 1 : 0;
 	meta.state.update((s) => ({
 		...s,
 		serverCount: Math.max(s.serverCount, init.serverCount),
-		myClicks: Math.max(s.myClicks, binaryMyClicks),
 		pendingHits: Math.max(s.pendingHits, init.pendingHits),
 	}));
 
@@ -277,39 +263,17 @@ export function attachBucket(
 		}
 	}
 
-	function click(): "like" | "unlike" | "limit" {
-		const before = meta.state.get();
-		// Binary session like: filled heart when myClicks === 1; second click clears it.
-		if (before.myClicks > 0) {
-			meta.state.update((s) => ({
-				...s,
-				myClicks: 0,
-				pendingHits: Math.max(0, s.pendingHits - 1),
-			}));
-			releaseDailyLikeQuota();
-			const st = meta.state.get();
-			handlers.onMyClicksPersist(st.myClicks);
-			handlers.onPendingHitsPersist(st.pendingHits);
-			try {
-				meta.bc?.postMessage({ type: "refresh" });
-			} catch {
-				/* ignore */
-			}
-			return "unlike";
-		}
-
+	function click(): "like" | "limit" {
 		if (!tryConsumeDailyLikeQuota()) {
 			return "limit";
 		}
 
 		meta.state.update((s) => ({
 			...s,
-			myClicks: 1,
 			pendingHits: s.pendingHits + 1,
 		}));
 
 		const st = meta.state.get();
-		handlers.onMyClicksPersist(st.myClicks);
 		handlers.onPendingHitsPersist(st.pendingHits);
 
 		try {
@@ -331,20 +295,18 @@ export function attachBucket(
 
 	function applyStorageSnapshot() {
 		const snap = handlers.loadInitial();
-		const bin = snap.myClicks > 0 ? 1 : 0;
 		meta.state.update((s) => ({
 			...s,
 			serverCount: Math.max(s.serverCount, snap.serverCount),
-			myClicks: bin,
-			pendingHits: snap.pendingHits,
+			pendingHits: Math.max(s.pendingHits, snap.pendingHits),
 		}));
 	}
 
 	function onStorage(ev: StorageEvent) {
 		const k = ev.key;
 		if (!k) {return;}
-		const { myClicks, serverCount, pendingHits } = handlers.localStorageKeys;
-		if (k !== myClicks && k !== serverCount && k !== pendingHits) {return;}
+		const { serverCount, pendingHits } = handlers.localStorageKeys;
+		if (k !== serverCount && k !== pendingHits) {return;}
 		applyStorageSnapshot();
 		void refresh();
 	}

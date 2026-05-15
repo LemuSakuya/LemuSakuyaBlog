@@ -3,7 +3,11 @@
 
 	import { siteConfig } from "@/config";
 
-	import { attachBucket, type LikeBucketState,safeKey } from "./likeButtonState";
+	import {
+		attachBucket,
+		type LikeBucketState,
+		safeKey,
+	} from "./likeButtonState";
 
 	export let type: "global" | "post" = "global";
 	export let postId: string | undefined = undefined;
@@ -15,11 +19,11 @@
 
 	let serverCount = 0;
 	let pendingHits = 0;
-	let myClicks = 0;
 	$: count = serverCount + pendingHits;
 	let isActive = false;
 	let activeTimer: ReturnType<typeof setTimeout> | null = null;
-	$: hasLiked = myClicks > 0;
+	/** Brief pulse on click only; heart stays idle when false. */
+	$: heartPulse = isActive;
 
 	type Particle = { id: number; x: number; y: number; rot: number };
 	let particleSeq = 0;
@@ -37,7 +41,7 @@
 	const legacyCountKey =
 		type === "post" ? `like-count-post-${postId}` : "like-count-global";
 
-	const myClicksKey =
+	const legacyMyClicksKey =
 		type === "post" ? `like-my-clicks-post-${postId}` : "like-my-clicks-global";
 	const countCacheKey =
 		type === "post" ? `like-server-count-post-${postId}` : "like-server-count-global";
@@ -60,9 +64,17 @@
 		}, 700);
 	}
 
+	function clearLegacyLikeUiKeys() {
+		try {
+			localStorage.removeItem(legacyMyClicksKey);
+			localStorage.removeItem(legacyLikedKey);
+		} catch {
+			/* ignore */
+		}
+	}
+
 	function loadInitialFromStorage(): {
 		serverCount: number;
-		myClicks: number;
 		pendingHits: number;
 	} {
 		const cachedCount = Number(localStorage.getItem(countCacheKey));
@@ -72,14 +84,6 @@
 			(Number.isFinite(legacyCount) ? legacyCount : 0) ||
 			0;
 
-		const cachedMyClicks = Number(localStorage.getItem(myClicksKey));
-		let clicks = Number.isFinite(cachedMyClicks) ? cachedMyClicks : 0;
-
-		// migrate: old "liked-*" boolean => myClicks = 1
-		if (clicks <= 0 && localStorage.getItem(legacyLikedKey) === "true") {
-			clicks = 1;
-		}
-
 		const cachedPending = Number(localStorage.getItem(pendingHitsKey));
 		const pending =
 			Number.isFinite(cachedPending) && cachedPending > 0
@@ -88,7 +92,6 @@
 
 		return {
 			serverCount: Math.max(0, count),
-			myClicks: Math.max(0, clicks) > 0 ? 1 : 0,
 			pendingHits: pending,
 		};
 	}
@@ -96,20 +99,6 @@
 	function persistServerCount(n: number) {
 		try {
 			localStorage.setItem(countCacheKey, String(Math.max(0, n)));
-		} catch {
-			/* ignore */
-		}
-	}
-
-	function persistMyClicks(n: number) {
-		try {
-			const v = Math.max(0, n) > 0 ? 1 : 0;
-			localStorage.setItem(myClicksKey, String(v));
-			if (v > 0) {
-				localStorage.setItem(legacyLikedKey, "true");
-			} else {
-				localStorage.removeItem(legacyLikedKey);
-			}
 		} catch {
 			/* ignore */
 		}
@@ -149,18 +138,18 @@
 	let likeApi:
 		| {
 				state: { subscribe: (fn: (s: LikeBucketState) => void) => () => void };
-				click: () => "like" | "unlike" | "limit";
+				click: () => "like" | "limit";
 				detach: () => void;
 		  }
 		| null = null;
 
 	onMount(() => {
+		clearLegacyLikeUiKeys();
+
 		likeApi = attachBucket(namespace, key, {
 			onServerCountPersist: persistServerCount,
-			onMyClicksPersist: persistMyClicks,
 			onPendingHitsPersist: persistPendingHits,
 			localStorageKeys: {
-				myClicks: myClicksKey,
 				serverCount: countCacheKey,
 				pendingHits: pendingHitsKey,
 			},
@@ -170,7 +159,6 @@
 		unsubscribe = likeApi.state.subscribe((s) => {
 			serverCount = s.serverCount;
 			pendingHits = s.pendingHits;
-			myClicks = s.myClicks;
 		});
 
 		isLoading = false;
@@ -193,17 +181,17 @@
 			onclick={handleLike}
 			type="button"
 			aria-disabled={isLoading}
-			class={`like-fab btn-card ${hasLiked ? "active" : ""} ${isLoading ? "is-loading" : ""}`}
-			title={hasLiked ? "已点赞" : "点赞"}
-			aria-label={hasLiked ? "已点赞" : "点赞"}
+			class={`like-fab btn-card ${heartPulse ? "active" : ""} ${isLoading ? "is-loading" : ""}`}
+			title="点赞"
+			aria-label="点赞"
 		>
 			<span class="like-fab__icon" aria-hidden="true">
 				<svg
 					class="h-5 w-5 transition-all duration-300"
-					class:scale-125={hasLiked}
-					class:like-heart-active={hasLiked}
-					class:like-heart-idle={!hasLiked}
-					fill={hasLiked ? "currentColor" : "none"}
+					class:scale-125={heartPulse}
+					class:like-heart-active={heartPulse}
+					class:like-heart-idle={!heartPulse}
+					fill={heartPulse ? "currentColor" : "none"}
 					stroke="currentColor"
 					stroke-width="2"
 					viewBox="0 0 24 24"
@@ -239,16 +227,16 @@
 		onclick={handleLike}
 		type="button"
 		aria-disabled={isLoading}
-		class={`flex items-center gap-2 rounded-lg px-3 py-2 transition-all duration-300 active:scale-95 cursor-pointer like-inline-btn ${hasLiked ? "like-inline-btn-active" : ""} ${isLoading ? "opacity-70" : ""}`}
-		title={hasLiked ? "已点赞" : "点赞"}
-		aria-label={hasLiked ? "已点赞" : "点赞"}
+		class={`flex items-center gap-2 rounded-lg px-3 py-2 transition-all duration-300 active:scale-95 cursor-pointer like-inline-btn ${heartPulse ? "like-inline-btn-active" : ""} ${isLoading ? "opacity-70" : ""}`}
+		title="点赞"
+		aria-label="点赞"
 	>
 		<svg
 			class="h-5 w-5 transition-all duration-300"
-			class:scale-125={hasLiked}
-			class:like-heart-active={hasLiked}
-			class:like-heart-idle={!hasLiked}
-			fill={hasLiked ? "currentColor" : "none"}
+			class:scale-125={heartPulse}
+			class:like-heart-active={heartPulse}
+			class:like-heart-idle={!heartPulse}
+			fill={heartPulse ? "currentColor" : "none"}
 			stroke="currentColor"
 			stroke-width="2"
 			viewBox="0 0 24 24"
