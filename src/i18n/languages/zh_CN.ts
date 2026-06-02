@@ -3,9 +3,12 @@ import type { Translation } from "../translation";
 
 export const zh_CN: Translation = {
 	[Key.home]: "主页",
-	[Key.about]: "关于我们",
+	[Key.about]: "关于我",
 	[Key.archive]: "归档",
 	[Key.search]: "搜索",
+	[Key.searchModeSite]: "站内",
+	[Key.searchModeGoogle]: "谷歌",
+	[Key.searchOnGoogle]: "在 Google 中搜索",
 	[Key.other]: "其他",
 
 	// 导航栏标题
@@ -13,6 +16,7 @@ export const zh_CN: Translation = {
 	[Key.navMy]: "我的",
 	[Key.navAbout]: "关于",
 	[Key.navOthers]: "其他",
+	[Key.navOJ]: "竞赛主页",
 
 	[Key.tags]: "标签",
 	[Key.categories]: "分类",

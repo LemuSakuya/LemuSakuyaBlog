@@ -220,6 +220,7 @@ export interface NavBarLink {
 	url: string;
 	external?: boolean;
 	icon?: string; // 菜单项图标
+	heading?: boolean; // 作为下拉菜单内的分区标题（不可点击）
 	children?: (NavBarLink | LinkPreset)[]; // 支持子菜单，可以是NavBarLink或LinkPreset
 }
 

@@ -30,7 +30,7 @@ const title = i18n(I18nKey.about);
 			<PageHeader title={title} />
 
 			<!-- 从MD文件读取的内容 -->
-			<Markdown class="mt-2">
+			<Markdown class="mt-2 about-md-large">
 				<Content />
 			</Markdown>
 		</div>
@@ -40,3 +40,14 @@ const title = i18n(I18nKey.about);
 		<Comment path="/about/" />
 	</div>
 </MainGridLayout>
+
+<style is:global>
+	/* 关于页正文字体放大 */
+	.about-md-large.prose {
+		font-size: 1.125rem;
+		line-height: 1.9;
+	}
+	.about-md-large.prose li {
+		font-size: 1.125rem;
+	}
+</style>

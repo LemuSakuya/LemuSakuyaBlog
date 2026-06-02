@@ -6,6 +6,9 @@ export const en: Translation = {
 	[Key.about]: "About",
 	[Key.archive]: "Archive",
 	[Key.search]: "Search",
+	[Key.searchModeSite]: "Site",
+	[Key.searchModeGoogle]: "Google",
+	[Key.searchOnGoogle]: "Search on Google",
 	[Key.other]: "Other",
 
 	// Navigation bar titles
@@ -13,6 +16,7 @@ export const en: Translation = {
 	[Key.navMy]: "My",
 	[Key.navAbout]: "About",
 	[Key.navOthers]: "Others",
+	[Key.navOJ]: "Online Judge",
 
 	[Key.tags]: "Tags",
 	[Key.categories]: "Categories",

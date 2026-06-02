@@ -14,6 +14,7 @@ const navTitleMap: Record<string, I18nKey> = {
 	My: I18nKey.navMy,
 	About: I18nKey.navAbout,
 	Others: I18nKey.navOthers,
+	"Online Judge": I18nKey.navOJ,
 	Anime: I18nKey.anime,
 	Diary: I18nKey.diary,
 	Gallery: I18nKey.albums,
@@ -63,37 +64,53 @@ const hasChildren = children.length > 0;
 
 				<div class="dropdown-menu" data-dropdown-menu>
 					<div class="dropdown-content">
-						{children.map((child) => (
-							<a
-								href={
-									child.external ? child.url : url(child.url)
-								}
-								target={child.external ? "_blank" : null}
-								rel={
-									child.external
-										? "noopener noreferrer"
-										: null
-								}
-								class="dropdown-item"
-								aria-label={child.name}
-							>
-								<div class="flex items-center">
+						{children.map((child) =>
+							child.heading ? (
+								<div class="dropdown-heading">
 									{child.icon && (
 										<Icon
 											name={child.icon}
-											class="text-[1rem] mr-2"
+											class="text-[0.9rem] mr-1.5"
 										/>
 									)}
 									<span>{getLocalizedName(child.name)}</span>
 								</div>
-								{child.external && (
-									<Icon
-										name="fa7-solid:arrow-up-right-from-square"
-										class="text-[0.75rem] text-black/25 dark:text-white/25 ml-2"
-									/>
-								)}
-							</a>
-						))}
+							) : (
+								<a
+									href={
+										child.external
+											? child.url
+											: url(child.url)
+									}
+									target={child.external ? "_blank" : null}
+									rel={
+										child.external
+											? "noopener noreferrer"
+											: null
+									}
+									class="dropdown-item"
+									aria-label={child.name}
+								>
+									<div class="flex items-center">
+										{child.icon && (
+											<Icon
+												name={child.icon}
+												class="text-[1rem] mr-2"
+											/>
+										)}
+										<span>
+											{getLocalizedName(child.name)}
+										</span>
+									</div>
+									{child.external && (
+										<Icon
+											name="fa7-solid:arrow-up-right-from-square"
+											class="text-[0.75rem] text-black/25 dark:text-white/25 ml-2"
+										/>
+									)}
+								</a>
+							),
+						)}
 					</div>
 				</div>
 			</>
@@ -155,6 +172,14 @@ const hasChildren = children.length > 0;
 
 	.dropdown-item {
 		@apply flex items-center justify-between px-4 py-2.5 text-black/75 dark:text-white/75 hover:text-[var(--primary)] hover:bg-[var(--btn-plain-bg-hover)] transition-colors duration-150 font-medium rounded-lg;
+	}
+
+	.dropdown-heading {
+		@apply flex items-center px-4 pt-2.5 pb-1 mt-1 text-xs font-bold uppercase tracking-wider text-black/40 dark:text-white/40 border-t border-black/5 dark:border-white/10;
+	}
+
+	.dropdown-heading:first-child {
+		@apply mt-0 border-t-0;
 	}
 
 	@media (max-width: 767px) {

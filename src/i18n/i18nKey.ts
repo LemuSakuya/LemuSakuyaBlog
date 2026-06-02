@@ -3,6 +3,9 @@ enum I18nKey {
 	about = "about",
 	archive = "archive",
 	search = "search",
+	searchModeSite = "searchModeSite",
+	searchModeGoogle = "searchModeGoogle",
+	searchOnGoogle = "searchOnGoogle",
 	other = "other",
 
 	// 导航栏标题
@@ -10,6 +13,7 @@ enum I18nKey {
 	navMy = "navMy",
 	navAbout = "navAbout",
 	navOthers = "navOthers",
+	navOJ = "navOJ",
 
 	tags = "tags",
 	categories = "categories",

@@ -2,8 +2,8 @@
 title: "I2C、SPI与常见外设"
 published: 2026-04-27
 description: "《单片机开发》学习笔记：I2C_SPI_与常见外设"
-tags: [学习笔记, 单片机开发]
-category: "单片机开发"
+tags: [Study Notes, MCU Development]
+category: "MCU Development"
 draft: false
 pinned: false
 comment: true

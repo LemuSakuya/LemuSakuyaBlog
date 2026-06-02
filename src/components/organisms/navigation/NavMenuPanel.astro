@@ -13,6 +13,7 @@ const navTitleMap: Record<string, string> = {
 	My: I18nKey.navMy,
 	About: I18nKey.navAbout,
 	Others: I18nKey.navOthers,
+	"Online Judge": I18nKey.navOJ,
 	Anime: I18nKey.anime,
 	Diary: I18nKey.diary,
 	Gallery: I18nKey.albums,
@@ -80,34 +81,46 @@ const processedLinks: ProcessedNavBarLink[] = (
 							/>
 						</button>
 						<div class="mobile-submenu" data-mobile-submenu>
-							{link.children.map((child) => (
-								<a
-									href={
-										child.external
-											? child.url
-											: url(child.url)
-									}
-									class="group flex justify-between items-center py-2 pl-6 pr-1 rounded-lg gap-4
-                                   hover:bg-[var(--btn-plain-bg-hover)] active:bg-[var(--btn-plain-bg-active)] transition"
-									target={child.external ? "_blank" : null}
-								>
-									<div class="flex items-center transition text-black/60 dark:text-white/60 font-medium">
+							{link.children.map((child) =>
+								child.heading ? (
+									<div class="flex items-center gap-1.5 py-1.5 pl-6 pr-1 mt-1 text-xs font-bold uppercase tracking-wider text-black/40 dark:text-white/40">
 										{child.icon && (
 											<Icon
 												name={child.icon}
-												class="text-[1.1rem] mr-2"
+												class="text-[0.95rem]"
 											/>
 										)}
 										{getLocalizedName(child.name)}
 									</div>
-									{child.external && (
-										<Icon
-											name="fa7-solid:arrow-up-right-from-square"
-											class="transition text-[0.75rem] text-black/25 dark:text-white/25 -translate-x-1"
-										/>
-									)}
-								</a>
-							))}
+								) : (
+									<a
+										href={
+											child.external
+												? child.url
+												: url(child.url)
+										}
+										class="group flex justify-between items-center py-2 pl-6 pr-1 rounded-lg gap-4
+                                   hover:bg-[var(--btn-plain-bg-hover)] active:bg-[var(--btn-plain-bg-active)] transition"
+										target={child.external ? "_blank" : null}
+									>
+										<div class="flex items-center transition text-black/60 dark:text-white/60 font-medium">
+											{child.icon && (
+												<Icon
+													name={child.icon}
+													class="text-[1.1rem] mr-2"
+												/>
+											)}
+											{getLocalizedName(child.name)}
+										</div>
+										{child.external && (
+											<Icon
+												name="fa7-solid:arrow-up-right-from-square"
+												class="transition text-[0.75rem] text-black/25 dark:text-white/25 -translate-x-1"
+											/>
+										)}
+									</a>
+								),
+							)}
 						</div>
 					</div>
 				) : (

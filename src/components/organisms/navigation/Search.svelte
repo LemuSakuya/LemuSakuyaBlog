@@ -10,6 +10,7 @@
 
 	let keywordDesktop = $state("");
 	let keywordMobile = $state("");
+	let searchMode: "site" | "google" = $state("site");
 	let result: SearchResult[] = $state([]);
 	let pagefindLoaded = false;
 	let initialized = $state(false);
@@ -112,6 +113,45 @@
 		navigateToPage(url);
 	};
 
+	const buildGoogleUrl = (keyword: string): string => {
+		const host =
+			typeof window !== "undefined" ? window.location.hostname : "";
+		const query = host ? `site:${host} ${keyword}` : keyword;
+		return `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+	};
+
+	const goToGoogle = (keyword: string): void => {
+		const trimmed = keyword.trim();
+		if (!trimmed || typeof window === "undefined") {
+			return;
+		}
+		window.open(buildGoogleUrl(trimmed), "_blank", "noopener,noreferrer");
+	};
+
+	const setSearchMode = (mode: "site" | "google"): void => {
+		if (searchMode === mode) {
+			return;
+		}
+		searchMode = mode;
+		result = [];
+		const keyword = keywordDesktop || keywordMobile;
+		const isDesktop = !!keywordDesktop || isDesktopSearchExpanded;
+		if (mode === "google") {
+			setPanelVisibility(!!keyword, isDesktop);
+		} else {
+			search(keyword, isDesktop);
+		}
+	};
+
+	const handleSearchKeydown = (event: KeyboardEvent): void => {
+		if (searchMode !== "google" || event.key !== "Enter") {
+			return;
+		}
+		event.preventDefault();
+		const keyword = keywordDesktop || keywordMobile;
+		goToGoogle(keyword);
+	};
+
 	const search = async (
 		keyword: string,
 		isDesktop: boolean,
@@ -119,6 +159,12 @@
 		if (!keyword) {
 			setPanelVisibility(false, isDesktop);
 			result = [];
+			return;
+		}
+		if (searchMode === "google") {
+			// Google 模式下不调用 pagefind，仅展示跳转入口
+			result = [];
+			setPanelVisibility(true, isDesktop);
 			return;
 		}
 		if (!initialized) {
@@ -199,19 +245,24 @@
 	});
 
 	$effect(() => {
-		if (initialized) {
-			const keyword = keywordDesktop || keywordMobile;
-			const isDesktop = !!keywordDesktop || isDesktopSearchExpanded;
+		const keyword = keywordDesktop || keywordMobile;
+		const isDesktop = !!keywordDesktop || isDesktopSearchExpanded;
 
-			clearTimeout(debounceTimer);
-			if (keyword) {
-				debounceTimer = setTimeout(() => {
-					search(keyword, isDesktop);
-				}, 300);
-			} else {
-				result = [];
-				setPanelVisibility(false, isDesktop);
-			}
+		clearTimeout(debounceTimer);
+		if (!keyword) {
+			result = [];
+			setPanelVisibility(false, isDesktop);
+			return;
+		}
+		if (searchMode === "google") {
+			result = [];
+			setPanelVisibility(true, isDesktop);
+			return;
+		}
+		if (initialized) {
+			debounceTimer = setTimeout(() => {
+				search(keyword, isDesktop);
+			}, 300);
 		}
 	});
 
@@ -271,6 +322,7 @@
 			id="search-input-desktop"
 			placeholder={i18n(I18nKey.search)}
 			bind:value={keywordDesktop}
+			onkeydown={handleSearchKeydown}
 			onfocus={() => {
 				clearTimeout(blurTimer);
 				if (!isDesktopSearchExpanded) {
@@ -317,10 +369,70 @@
 		<input
 			placeholder={i18n(I18nKey.search)}
 			bind:value={keywordMobile}
+			onkeydown={handleSearchKeydown}
 			class="pl-10 absolute inset-0 text-sm bg-transparent outline-0
                focus:w-60 text-black/50 dark:text-white/50"
 		/>
 	</div>
+	<!-- search mode toggle: site (pagefind) vs google -->
+	<div
+		class="flex gap-1 mt-2 p-1 rounded-xl bg-black/[0.04] dark:bg-white/5 text-sm"
+		role="tablist"
+	>
+		<button
+			type="button"
+			role="tab"
+			aria-selected={searchMode === "site"}
+			onmousedown={(e) => e.preventDefault()}
+			onclick={() => setSearchMode("site")}
+			class="flex-1 flex items-center justify-center gap-1 h-8 rounded-lg transition
+				{searchMode === 'site'
+				? 'bg-[var(--primary)] text-white font-bold'
+				: 'text-black/50 dark:text-white/50 hover:bg-black/[0.04] dark:hover:bg-white/10'}"
+		>
+			<Icon icon="material-symbols:search" class="text-[1rem]"></Icon>
+			{i18n(I18nKey.searchModeSite)}
+		</button>
+		<button
+			type="button"
+			role="tab"
+			aria-selected={searchMode === "google"}
+			onmousedown={(e) => e.preventDefault()}
+			onclick={() => setSearchMode("google")}
+			class="flex-1 flex items-center justify-center gap-1 h-8 rounded-lg transition
+				{searchMode === 'google'
+				? 'bg-[var(--primary)] text-white font-bold'
+				: 'text-black/50 dark:text-white/50 hover:bg-black/[0.04] dark:hover:bg-white/10'}"
+		>
+			<Icon icon="fa7-brands:google" class="text-[0.9rem]"></Icon>
+			{i18n(I18nKey.searchModeGoogle)}
+		</button>
+	</div>
+	<!-- google search entry -->
+	{#if searchMode === "google" && (keywordDesktop || keywordMobile)}
+		<button
+			type="button"
+			onmousedown={(e) => e.preventDefault()}
+			onclick={() => goToGoogle(keywordDesktop || keywordMobile)}
+			class="transition mt-2 group flex items-center gap-3 w-full text-left
+				rounded-xl text-lg px-3 py-2 hover:bg-[var(--btn-plain-bg-hover)] active:bg-[var(--btn-plain-bg-active)]"
+		>
+			<Icon
+				icon="fa7-brands:google"
+				class="text-[1.1rem] text-[var(--primary)] shrink-0"
+			></Icon>
+			<span class="flex flex-col">
+				<span
+					class="transition text-90 font-bold group-hover:text-[var(--primary)]"
+				>
+					{i18n(I18nKey.searchOnGoogle)}
+				</span>
+				<span class="transition text-sm text-50 break-all">
+					{keywordDesktop || keywordMobile}
+				</span>
+			</span>
+		</button>
+	{/if}
 	<!-- search results -->
 	{#each result as item}
 		<a

@@ -2,8 +2,8 @@
 title: "信息收集与OSINT"
 published: 2026-04-27
 description: "《网络安全》学习笔记：信息收集与OSINT"
-tags: [学习笔记, 网络安全]
-category: "网络安全"
+tags: [Study Notes, Cybersecurity]
+category: "Cybersecurity"
 draft: false
 pinned: false
 comment: true

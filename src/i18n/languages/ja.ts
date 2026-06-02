@@ -6,6 +6,9 @@ export const ja: Translation = {
 	[Key.about]: "このブログについて",
 	[Key.archive]: "アーカイブ",
 	[Key.search]: "検索",
+	[Key.searchModeSite]: "サイト内",
+	[Key.searchModeGoogle]: "Google",
+	[Key.searchOnGoogle]: "Google で検索",
 	[Key.other]: "その他",
 
 	// ナビゲーションバータイトル
@@ -13,6 +16,7 @@ export const ja: Translation = {
 	[Key.navMy]: "私の",
 	[Key.navAbout]: "情報",
 	[Key.navOthers]: "その他",
+	[Key.navOJ]: "競技プログラミング",
 
 	[Key.tags]: "タグ",
 	[Key.categories]: "カテゴリー",
