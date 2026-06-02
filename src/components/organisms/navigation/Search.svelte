@@ -114,10 +114,7 @@
 	};
 
 	const buildGoogleUrl = (keyword: string): string => {
-		const host =
-			typeof window !== "undefined" ? window.location.hostname : "";
-		const query = host ? `site:${host} ${keyword}` : keyword;
-		return `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+		return `https://www.google.com/search?q=${encodeURIComponent(keyword)}`;
 	};
 
 	const goToGoogle = (keyword: string): void => {
