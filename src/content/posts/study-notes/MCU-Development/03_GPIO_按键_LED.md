@@ -1,7 +1,7 @@
 ---
 title: "GPIO、按键与LED"
 published: 2026-04-27
-description: "《单片机开发》学习笔记：GPIO_按键_LED"
+description: "《单片机开发》学习笔记：GPIO 按键 LED"
 tags: [Study Notes, MCU Development]
 category: "MCU Development"
 draft: false

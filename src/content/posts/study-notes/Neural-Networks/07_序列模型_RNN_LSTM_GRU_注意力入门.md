@@ -1,7 +1,7 @@
 ---
 title: "序列模型 RNN LSTM GRU 注意力入门"
 published: 2026-06-03
-description: "《神经网络》学习笔记：07_序列模型_RNN_LSTM_GRU_注意力入门"
+description: "《神经网络》学习笔记：07 序列模型 RNN LSTM GRU 注意力入门"
 tags: [Study Notes, Neural Networks]
 category: "Neural Networks"
 draft: false
