@@ -13,6 +13,11 @@ const relativeTime = formatRelativeTime(
 	hoursAgo,
 	daysAgo,
 );
+
+const paragraphs = moment.content
+	.split(/\n\s*\n/)
+	.map((paragraph) => paragraph.trim())
+	.filter(Boolean);
 ---
 
 <div
@@ -20,12 +25,24 @@ const relativeTime = formatRelativeTime(
 	data-tags={moment.tags?.join(",") || ""}
 >
 	<div class="p-5">
+		{
+			moment.title && (
+				<h2 class="text-base md:text-lg font-semibold text-black/90 dark:text-white/90 mb-3">
+					{moment.title}
+				</h2>
+			)
+		}
+
 		<!-- Content -->
-		<p
-			class="text-sm md:text-base text-black/90 dark:text-white/90 leading-relaxed mb-3"
+		<div
+			class="text-sm md:text-base text-black/90 dark:text-white/90 leading-relaxed mb-3 space-y-3"
 		>
-			{moment.content}
-		</p>
+			{
+				paragraphs.map((paragraph) => (
+					<p class="whitespace-pre-wrap">{paragraph}</p>
+				))
+			}
+		</div>
 
 		<!-- Images -->
 		{
@@ -106,6 +123,22 @@ const relativeTime = formatRelativeTime(
 						<span class="flex items-center gap-1">
 							{moment.mood}
 						</span>
+					)
+				}
+				{
+					moment.link && (
+						<a
+							href={moment.link}
+							target="_blank"
+							rel="noopener noreferrer"
+							class="flex items-center gap-1 hover:text-[var(--primary)] transition-colors"
+						>
+							<Icon
+								name="material-symbols:open-in-new"
+								class="text-xs w-3.5 h-3.5"
+							/>
+							原文
+						</a>
 					)
 				}
 			</div>
