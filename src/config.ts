@@ -377,12 +377,6 @@ export const navBarConfig: NavBarConfig = {
 					icon: "material-symbols:code",
 				},
 				{
-					name: "Codeforces",
-					url: "https://codeforces.com/profile/LemuSakuya",
-					external: true,
-					icon: "simple-icons:codeforces",
-				},
-				{
 					name: "洛谷 Luogu",
 					url: "https://www.luogu.com.cn/user/1518618",
 					external: true,
