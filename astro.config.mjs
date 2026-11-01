@@ -1,5 +1,5 @@
 import sitemap from "@astrojs/sitemap";
-import mdx from '@astrojs/mdx';
+import mdx from "@astrojs/mdx";
 import svelte, { vitePreprocess } from "@astrojs/svelte";
 import { pluginCollapsibleSections } from "@expressive-code/plugin-collapsible-sections";
 import { pluginLineNumbers } from "@expressive-code/plugin-line-numbers";
@@ -39,6 +39,11 @@ export default defineConfig({
 	trailingSlash: "always",
 
 	output: "static",
+
+	build: {
+		// 内联小型 CSS 文件以减少网络请求
+		inlineStylesheets: "auto",
+	},
 
 	integrations: [
 		oddmisc({
@@ -186,7 +191,6 @@ export default defineConfig({
 		// 开发环境预打包优化：将常用依赖提前编译，避免首次页面加载时 on-demand 编译导致 8s+ 的等待
 		optimizeDeps: {
 			include: [
-				"@iconify/svelte",
 				"svelte",
 				"svelte/transition",
 				"svelte/easing",
@@ -217,8 +221,6 @@ export default defineConfig({
 			// CSS 代码分割
 			cssCodeSplit: true,
 			cssMinify: "esbuild",
-			// 内联小型 CSS 文件以减少网络请求
-			inlineStylesheets: "auto",
 			// 生产环境移除 console 和 debugger
 			minify: "esbuild",
 			rollupOptions: {
@@ -238,7 +240,7 @@ export default defineConfig({
 			},
 		},
 		// 生产环境移除 console.log 和 debugger
-		esbuildOptions: {
+		esbuild: {
 			drop:
 				process.env.NODE_ENV === "production"
 					? ["console", "debugger"]

@@ -8,6 +8,7 @@ loadEnv();
 
 const API_BASE = "https://api.bilibili.com/x/space/bangumi/follow/list";
 const PAGE_SIZE = 30;
+const REQUEST_TIMEOUT = 15_000;
 const CONFIG_PATH = path.join(
 	path.dirname(fileURLToPath(import.meta.url)),
 	"../src/config.ts",
@@ -101,10 +102,12 @@ async function getAnimeModeFromConfig() {
 	}
 }
 
-async function getDataPage(vmid, status, typeNum = 1) {
+async function getDataPage(vmid, status, typeNum, SESSDATA) {
+	const headers = SESSDATA ? { cookie: `SESSDATA=${SESSDATA};` } : {};
 	const response = await withRetry(() =>
 		axios.get(
 			`${API_BASE}?type=${typeNum}&follow_status=${status}&vmid=${vmid}&ps=1&pn=1`,
+			{ headers, timeout: REQUEST_TIMEOUT },
 		),
 	);
 
@@ -137,7 +140,7 @@ async function getData(
 	const response = await withRetry(() =>
 		axios.get(
 			`${API_BASE}?type=${typeNum}&follow_status=${status}&vmid=${vmid}&ps=${PAGE_SIZE}&pn=${pn}`,
-			{ headers },
+			{ headers, timeout: REQUEST_TIMEOUT },
 		),
 	);
 
@@ -290,10 +293,9 @@ async function processData(
 	coverMirror,
 	SESSDATA,
 ) {
-	const page = await getDataPage(vmid, status, typeNum);
+	const page = await getDataPage(vmid, status, typeNum, SESSDATA);
 	if (!page?.success) {
-		console.error(`Get bangumi data error:`, page?.data);
-		return [];
+		throw new Error(`Could not fetch Bilibili collection: ${page?.data}`);
 	}
 
 	const list = [];
@@ -370,14 +372,18 @@ async function main() {
 
 	const finalAnimeList = [...planned, ...watching, ...completed];
 
-	const dir = path.dirname(OUTPUT_FILE);
+	await fs.mkdir(path.dirname(OUTPUT_FILE), { recursive: true });
+	const temporaryFile = `${OUTPUT_FILE}.${process.pid}.tmp`;
 	try {
-		await fs.access(dir);
-	} catch {
-		await fs.mkdir(dir, { recursive: true });
+		await fs.writeFile(
+			temporaryFile,
+			JSON.stringify(finalAnimeList, null, 2),
+		);
+		await fs.rename(temporaryFile, OUTPUT_FILE);
+	} finally {
+		await fs.rm(temporaryFile, { force: true });
 	}
 
-	await fs.writeFile(OUTPUT_FILE, JSON.stringify(finalAnimeList, null, 2));
 	console.log(`\nUpdate complete! Data saved to: ${OUTPUT_FILE}`);
 	console.log(`Total collected: ${finalAnimeList.length} anime series`);
 	console.log(`  - Planned: ${planned.length}`);
@@ -387,6 +393,6 @@ async function main() {
 
 main().catch((err) => {
 	console.error("\n✘ Script execution error:");
-	console.error(err);
+	console.error(err.message);
 	process.exit(1);
 });

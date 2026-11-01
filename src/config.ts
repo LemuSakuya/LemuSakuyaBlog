@@ -69,13 +69,13 @@ export const siteConfig: SiteConfig = {
 	},
 
 	bangumi: {
-		userId: "713599", // 在此处设置你的Bangumi用户ID，可以设置为 "sai" 测试
-		fetchOnDev: true, // 是否在开发环境下获取 Bangumi 数据（默认 false），获取前先执行 pnpm build 构建 json 文件
+		userId: "713599", // Bangumi 用户 ID 或用户名
+		fetchOnDev: true, // pnpm dev 启动前同步 Bangumi 数据，并在开发页面中加载
 	},
 
 	bilibili: {
 		vmid: "505586604", // 在此处设置你的Bilibili用户ID (uid)，例如 "1129280784"
-		fetchOnDev: true, // 是否在开发环境下获取 Bilibili 数据（默认 false）
+		fetchOnDev: true, // 使用 bilibili 模式时，pnpm dev 启动前同步并加载数据
 		coverMirror: "", // 封面图片镜像源（可选，如果需要使用镜像源，例如 "https://images.weserv.nl/?url="）
 		useWebp: true, // 是否使用WebP格式（默认 true）
 
@@ -514,9 +514,9 @@ export const musicPlayerConfig: MusicPlayerConfig = {
 	floatingEntryMode: "fab", // 悬浮入口模式："default" 为独立悬浮播放器，"fab" 为集成到通用 FAB 组
 	mode: "meting", // 音乐播放器模式，可选 "local" 或 "meting"
 	meting_api:
-		"https://meting.mysqil.com/api?server=:server&type=:type&id=:id&auth=:auth&r=:r", // Meting API 地址
+		"https://api.injahow.cn/meting/?server=:server&type=:type&id=:id&auth=:auth&r=:r", // Meting API 地址
 	id: "8387931127", // 歌单ID
-	server: "netease", // 音乐源服务器。有的meting的api源支持更多平台,一般来说,netease=网易云音乐, tencent=QQ音乐, kugou=酷狗音乐, xiami=虾米音乐, baidu=百度音乐
+	server: "netease", // 音乐平台，需由所用 Meting API 支持；netease 为网易云音乐
 	type: "playlist", // 播单类型
 };
 

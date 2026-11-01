@@ -3,6 +3,8 @@ import path from "path";
 import { fileURLToPath } from "url";
 
 const API_BASE = "https://api.bgm.tv";
+const USER_AGENT =
+	"LemuSakuya/LemuSakuyaBlog (https://github.com/LemuSakuya/LemuSakuyaBlog)";
 const CONFIG_PATH = path.join(
 	path.dirname(fileURLToPath(import.meta.url)),
 	"../src/config.ts",
@@ -20,16 +22,13 @@ async function getUserIdFromConfig() {
 		);
 
 		if (match && match[1]) {
-			const userId = match[1];
+			const userId = match[1].trim();
 			if (
 				userId === "your-bangumi-id" ||
 				userId === "your-user-id" ||
 				!userId
 			) {
-				console.warn(
-					"Warning: userId in src/config.ts appears to be a default value.",
-				);
-				return userId;
+				throw new Error("Set a valid bangumi.userId in src/config.ts.");
 			}
 			return userId;
 		}
@@ -59,11 +58,39 @@ async function getAnimeModeFromConfig() {
 // 模拟延迟防止 API 限制
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+async function fetchBangumiJson(endpoint) {
+	for (let attempt = 0; attempt < 3; attempt++) {
+		try {
+			const response = await fetch(`${API_BASE}${endpoint}`, {
+				headers: {
+					Accept: "application/json",
+					"User-Agent": USER_AGENT,
+				},
+				signal: AbortSignal.timeout(15_000),
+			});
+			if (!response.ok) {
+				const error = new Error(
+					`Bangumi API ${response.status}: ${endpoint}`,
+				);
+				error.status = response.status;
+				throw error;
+			}
+			return await response.json();
+		} catch (error) {
+			const retryable =
+				!error.status || error.status === 429 || error.status >= 500;
+			if (!retryable || attempt === 2) throw error;
+			console.warn(
+				`Bangumi request failed, retrying (${attempt + 1}/2)...`,
+			);
+			await delay(500 * 2 ** attempt);
+		}
+	}
+}
+
 async function fetchSubjectDetail(subjectId) {
 	try {
-		const response = await fetch(`${API_BASE}/v0/subjects/${subjectId}`);
-		if (!response.ok) return null;
-		return await response.json();
+		return await fetchBangumiJson(`/v0/subjects/${subjectId}`);
 	} catch (error) {
 		return null;
 	}
@@ -90,47 +117,33 @@ function getStudioFromInfobox(infobox) {
 }
 
 async function fetchCollection(userId, type) {
-	let allData = [];
+	const allData = [];
 	let offset = 0;
 	const limit = 50;
-	let hasMore = true;
 
 	console.log(`Fetching type: ${type}...`);
 
-	while (hasMore) {
-		const url = `${API_BASE}/v0/users/${userId}/collections?subject_type=2&type=${type}&limit=${limit}&offset=${offset}`;
-		try {
-			const response = await fetch(url);
-
-			if (!response.ok) {
-				if (response.status === 404) {
-					console.log(
-						`   User ${userId} does not exist or has no data of this type.`,
-					);
-					return [];
-				}
-				throw new Error(`API Error ${response.status}`);
-			}
-
-			const data = await response.json();
-
-			if (data.data && data.data.length > 0) {
-				allData = [...allData, ...data.data];
-				process.stdout.write(
-					`   Fetched ${allData.length} records...\r`,
-				);
-			}
-
-			if (!data.data || data.data.length < limit) {
-				hasMore = false;
-			} else {
-				offset += limit;
-				await delay(300);
-			}
-		} catch (e) {
-			console.error(`\nFetch failed (Type ${type}):`, e.message);
-			hasMore = false;
+	while (true) {
+		const data = await fetchBangumiJson(
+			`/v0/users/${encodeURIComponent(userId)}/collections?subject_type=2&type=${type}&limit=${limit}&offset=${offset}`,
+		);
+		if (
+			!Array.isArray(data.data) ||
+			!Number.isInteger(data.total) ||
+			data.total < 0
+		) {
+			throw new Error(
+				`Invalid Bangumi collection response (type ${type}).`,
+			);
 		}
+		allData.push(...data.data);
+		process.stdout.write(`   Fetched ${allData.length} records...\r`);
+		if (allData.length >= data.total) break;
+		if (data.data.length === 0) {
+			throw new Error(`Incomplete Bangumi collection (type ${type}).`);
+		}
+		offset += data.data.length;
+		await delay(300);
 	}
 	console.log("");
 	return allData;
@@ -213,7 +226,10 @@ async function main() {
 
 	const USER_ID = await getUserIdFromConfig();
 	console.log(`Read User ID: ${USER_ID}`);
+	await updateBangumiData(USER_ID);
+}
 
+export async function updateBangumiData(userId, outputFile = OUTPUT_FILE) {
 	const collections = [
 		{ type: 3, status: "watching" },
 		{ type: 1, status: "planned" },
@@ -225,27 +241,35 @@ async function main() {
 	let finalAnimeList = [];
 
 	for (const c of collections) {
-		const rawData = await fetchCollection(USER_ID, c.type);
+		const rawData = await fetchCollection(userId, c.type);
 		if (rawData.length > 0) {
 			const processed = await processData(rawData, c.status);
 			finalAnimeList = [...finalAnimeList, ...processed];
 		}
 	}
 
-	const dir = path.dirname(OUTPUT_FILE);
+	await fs.mkdir(path.dirname(outputFile), { recursive: true });
+	const temporaryFile = `${outputFile}.${process.pid}.tmp`;
 	try {
-		await fs.access(dir);
-	} catch {
-		await fs.mkdir(dir, { recursive: true });
+		await fs.writeFile(
+			temporaryFile,
+			JSON.stringify(finalAnimeList, null, 2),
+		);
+		await fs.rename(temporaryFile, outputFile);
+	} finally {
+		await fs.rm(temporaryFile, { force: true });
 	}
-
-	await fs.writeFile(OUTPUT_FILE, JSON.stringify(finalAnimeList, null, 2));
-	console.log(`\nUpdate complete! Data saved to: ${OUTPUT_FILE}`);
+	console.log(`\nUpdate complete! Data saved to: ${outputFile}`);
 	console.log(`Total collected: ${finalAnimeList.length} anime series`);
 }
 
-main().catch((err) => {
-	console.error("\n✘ Script execution error:");
-	console.error(err);
-	process.exit(1);
-});
+if (
+	process.argv[1] &&
+	path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)
+) {
+	main().catch((err) => {
+		console.error("\n✘ Script execution error (existing data preserved):");
+		console.error(err);
+		process.exitCode = 1;
+	});
+}

@@ -8,27 +8,10 @@ const CONFIG_PATH = path.join(
 	"../src/config.ts",
 );
 
-async function getAnimeModeFromConfig() {
-	try {
-		const configContent = await fs.readFile(CONFIG_PATH, "utf-8");
-		const match = configContent.match(
-			/anime:\s*\{[\s\S]*?mode:\s*["']([^"']+)["']/,
-		);
-
-		if (match && match[1]) {
-			return match[1];
-		}
-		return "bangumi";
-	} catch (error) {
-		return "bangumi";
-	}
-}
-
 function runScript(scriptPath) {
 	return new Promise((resolve, reject) => {
-		const script = spawn("node", [scriptPath], {
+		const script = spawn(process.execPath, [scriptPath], {
 			stdio: "inherit",
-			shell: true,
 		});
 
 		script.on("close", (code) => {
@@ -46,11 +29,33 @@ function runScript(scriptPath) {
 }
 
 async function main() {
-	const mode = await getAnimeModeFromConfig();
+	const configContent = await fs.readFile(CONFIG_PATH, "utf-8");
+	const mode =
+		configContent.match(
+			/anime:\s*\{[\s\S]*?mode:\s*["']([^"']+)["']/,
+		)?.[1] ?? "bangumi";
+	const featurePages = configContent.match(
+		/featurePages:\s*\{([^}]+)\}/,
+	)?.[1];
+	if (featurePages && /anime:\s*false\b/.test(featurePages)) {
+		console.log("Anime page is disabled, skipping data update.");
+		return;
+	}
+	if (process.argv.includes("--dev")) {
+		const sourceConfig = configContent.match(
+			new RegExp(`\\b${mode}:\\s*\\{([^}]+)\\}`),
+		)?.[1];
+		if (!sourceConfig || !/fetchOnDev:\s*true\b/.test(sourceConfig)) {
+			console.log(`Development data update is disabled for ${mode}.`);
+			return;
+		}
+	}
 	const scriptsDir = path.dirname(fileURLToPath(import.meta.url));
 
 	if (mode === "bilibili") {
-		console.log("Detected anime mode: bilibili, running update-bilibili.mjs");
+		console.log(
+			"Detected anime mode: bilibili, running update-bilibili.mjs",
+		);
 		await runScript(path.join(scriptsDir, "update-bilibili.mjs"));
 	} else if (mode === "bangumi") {
 		console.log("Detected anime mode: bangumi, running update-bangumi.mjs");
@@ -65,4 +70,3 @@ main().catch((err) => {
 	console.error(err);
 	process.exit(1);
 });
-

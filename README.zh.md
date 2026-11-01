@@ -142,6 +142,19 @@
 - **自定义页面：** 编辑 `src/content/spec/` 中的特殊页面
 - **添加图片：** 将图片放在 `src/assets/` 或 `public/` 中
 
+### 番剧数据同步
+
+在 `src/config.ts` 中设置 `anime.mode`，并填写对应的 `bangumi.userId` 或 `bilibili.vmid`。
+
+- `pnpm update-anime`：立即同步当前模式的收藏、观看进度和评分。
+- `pnpm dev` / `pnpm start`：对应数据源的 `fetchOnDev: true` 时，启动前同步并显示番剧数据；关闭时跳过同步和开发页面加载。
+- `pnpm build`：同步数据后生成静态页面、搜索索引和字体子集。Bangumi 字体文字直接取自同一份同步结果。
+- 收藏接口失败或分页中断时，同步命令报错并保留已有的 Bangumi 数据，不写入空列表或部分列表。
+
+生成的 `src/data/bangumi-data.json` 和 `src/data/bilibili-data.json` 不提交到 Git；部署构建时重新生成。静态页面中的收藏会在下一次构建后更新。
+
+本地推荐使用 `.node-version` 指定的 Node.js 24 LTS 和 `package.json` 指定的 pnpm；`pnpm test` 检查同步失败保护，`pnpm check` 和 `pnpm lint` 检查代码，`pnpm lint:fix` 可自动修复 lint 问题。
+
 ### 🚀 部署
 
 将博客部署到任何静态托管平台：

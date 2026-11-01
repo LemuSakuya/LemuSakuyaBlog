@@ -40,7 +40,10 @@ if (
 	emptyDescription = i18n(I18nKey.animeConfigBilibili);
 } else if (
 	ANIME_MODE === "bangumi" &&
-	siteConfig.bangumi?.userId === "your-user-id"
+	(!siteConfig.bangumi?.userId?.trim() ||
+		["your-user-id", "your-bangumi-id"].includes(
+			siteConfig.bangumi.userId.trim(),
+		))
 ) {
 	showEmptyState = true;
 	emptyDescription = i18n(I18nKey.animeConfigBangumi);

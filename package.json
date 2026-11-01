@@ -7,8 +7,9 @@
 		"init-content": "node scripts/init-content-repo.js",
 		"predev": "node scripts/sync-content.js || true",
 		"prebuild": "node scripts/sync-content.js || true",
-		"dev": "astro dev",
-		"start": "astro dev",
+		"dev": "node scripts/update-anime.mjs --dev && astro dev",
+		"start": "pnpm dev",
+		"test": "node --test scripts/*.test.mjs",
 		"check": "astro check",
 		"update-anime": "node scripts/update-anime.mjs",
 		"update-bangumi": "node scripts/update-bangumi.mjs",
@@ -21,7 +22,8 @@
 		"new-post": "node scripts/new-post.js",
 		"import-notes": "node scripts/import-notes.js",
 		"format": "prettier --write ./src",
-		"lint": "eslint ./src --fix",
+		"lint": "eslint ./src",
+		"lint:fix": "eslint ./src --fix",
 		"preinstall": "npx only-allow pnpm",
 		"compress-fonts": "node scripts/compress-fonts.js"
 	},
@@ -108,5 +110,8 @@
 		"svelte-eslint-parser": "^1.6.0",
 		"typescript-eslint": "^8.58.2"
 	},
-	"packageManager": "pnpm@10.33.0"
+	"packageManager": "pnpm@10.33.0",
+	"engines": {
+		"node": "^22.13.0 || ^24.0.0 || ^26.0.0"
+	}
 }
