@@ -197,7 +197,7 @@
 		if (unsubscribe) {
 			unsubscribe();
 		}
-		musicPlayerStore.destroy();
+		// The shared audio engine outlives individual UI islands during navigation.
 	});
 </script>
 
@@ -317,7 +317,7 @@
 	<style>
 		.music-player-fab-anchor {
 			right: var(--fab-group-right, 1.5rem);
-			bottom: calc(
+			--music-anchor-bottom: calc(
 				var(--fab-group-bottom, 10rem) +
 					(
 						var(--fab-button-size, 3rem) *
@@ -328,6 +328,7 @@
 							(var(--fab-visible-count, 1) - 1)
 					)
 			);
+			bottom: var(--music-anchor-bottom);
 			width: 0;
 			height: 0;
 			pointer-events: none;
@@ -339,6 +340,9 @@
 			bottom: 0.75rem;
 			transform-origin: bottom right;
 			pointer-events: auto;
+			max-height: calc(100dvh - var(--music-anchor-bottom) - 1.5rem);
+			overflow-y: auto;
+			overscroll-behavior: contain;
 			will-change: transform, opacity;
 		}
 
@@ -480,7 +484,7 @@
 		@media (max-width: 768px) {
 			.music-player-fab-anchor {
 				right: var(--fab-group-right, 0.75rem) !important;
-				bottom: calc(
+				--music-anchor-bottom: calc(
 					var(--fab-group-bottom, 5rem) +
 						(
 							var(--fab-button-size, 2.75rem) *
@@ -539,7 +543,7 @@
 		@media (max-width: 480px) {
 			.music-player-fab-anchor {
 				right: var(--fab-group-right, 0.5rem) !important;
-				bottom: calc(
+				--music-anchor-bottom: calc(
 					var(--fab-group-bottom, 4.5rem) +
 						(
 							var(--fab-button-size, 2.5rem) *

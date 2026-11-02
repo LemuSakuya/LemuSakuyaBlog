@@ -13,24 +13,17 @@
 	let state: MusicPlayerState = $state(musicPlayerStore.getState());
 	let showPlaylist = $state(false);
 
-	function handleStateUpdate(event: Event) {
-		const custom = event as CustomEvent<MusicPlayerState>;
-		if (custom.detail) {
-			state = custom.detail;
-		}
-	}
+	let unsubscribe: (() => void) | undefined;
 
 	onMount(() => {
-		window.addEventListener("music-sidebar:state", handleStateUpdate);
+		unsubscribe = musicPlayerStore.subscribe((nextState) => {
+			state = nextState;
+		});
+		void musicPlayerStore.initialize();
 	});
 
 	onDestroy(() => {
-		if (typeof window !== "undefined") {
-			window.removeEventListener(
-				"music-sidebar:state",
-				handleStateUpdate,
-			);
-		}
+		unsubscribe?.();
 	});
 
 	function togglePlay() {
