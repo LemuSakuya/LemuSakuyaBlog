@@ -124,6 +124,8 @@ export const en: Translation = {
 	[Key.musicPlayerLoading]: "Loading...",
 	[Key.musicPlayerErrorPlaylist]: "Failed to fetch playlist",
 	[Key.musicPlayerErrorSong]: "Failed to load current song, trying next",
+	[Key.musicPlayerErrorPlayback]:
+		"Playback failed. Please click Play to retry.",
 	[Key.musicPlayerErrorEmpty]: "No available songs in playlist",
 	[Key.unknownSong]: "Unknown Song",
 	[Key.unknownArtist]: "Unknown Artist",

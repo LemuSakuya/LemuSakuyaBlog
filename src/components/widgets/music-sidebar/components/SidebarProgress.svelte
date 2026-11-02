@@ -13,7 +13,9 @@
 			: 0,
 	);
 
-	function handleClick(event: MouseEvent) {
+	let dragging = false;
+
+	function handlePointer(event: PointerEvent) {
 		const el = event.currentTarget as HTMLElement | null;
 		if (!el || duration <= 0) {
 			return;
@@ -22,22 +24,57 @@
 		const percent = (event.clientX - rect.left) / rect.width;
 		const clamped = Math.max(0, Math.min(1, percent));
 		const time = clamped * duration;
+		dragging = true;
+		el.setPointerCapture(event.pointerId);
 		onSeek(time);
 	}
 
 	function handleKeyDown(event: KeyboardEvent) {
-		if (event.key === "Enter" || event.key === " ") {
-			event.preventDefault();
-			const time = duration * 0.5;
-			onSeek(time);
+		if (duration <= 0) return;
+		let time: number;
+		switch (event.key) {
+			case "ArrowLeft":
+			case "ArrowDown":
+				time = currentTime - 5;
+				break;
+			case "ArrowRight":
+			case "ArrowUp":
+				time = currentTime + 5;
+				break;
+			case "Home":
+				time = 0;
+				break;
+			case "End":
+				time = duration;
+				break;
+			case "Enter":
+			case " ":
+				time = duration * 0.5;
+				break;
+			default:
+				return;
 		}
+		event.preventDefault();
+		onSeek(Math.max(0, Math.min(duration, time)));
 	}
 </script>
 
 <div class="sidebar-progress-wrapper">
 	<div
 		class="sidebar-progress-bar"
-		onclick={handleClick}
+		onpointerdown={handlePointer}
+		onpointermove={(event) => {
+			if (dragging) handlePointer(event);
+		}}
+		onpointerup={() => {
+			dragging = false;
+		}}
+		onpointercancel={() => {
+			dragging = false;
+		}}
+		onlostpointercapture={() => {
+			dragging = false;
+		}}
 		onkeydown={handleKeyDown}
 		role="slider"
 		tabindex="0"
@@ -45,6 +82,7 @@
 		aria-valuemin="0"
 		aria-valuemax="100"
 		aria-valuenow={progressPercent}
+		aria-disabled={duration <= 0}
 	>
 		<div
 			class="sidebar-progress-fill"
@@ -70,6 +108,7 @@
 		);
 		overflow: hidden;
 		cursor: pointer;
+		touch-action: none;
 	}
 
 	.sidebar-progress-fill {

@@ -45,10 +45,15 @@ function getAssetPath(path: string): string {
 	return `/${path}`;
 }
 
-class MusicPlayerStore {
+export class MusicPlayerStore {
 	private audio: HTMLAudioElement | null = null;
 	private state: MusicPlayerState;
 	private isInitialized = false;
+	private playlistController: AbortController | undefined;
+	private errorTimer: ReturnType<typeof setTimeout> | undefined;
+	private skipTimer: ReturnType<typeof setTimeout> | undefined;
+	private failedSongs = new Set<string>();
+	private audioLoadTimer: ReturnType<typeof setTimeout> | undefined;
 	private unregisterInteraction: (() => void) | undefined;
 	private listeners = new Set<(state: MusicPlayerState) => void>();
 
@@ -125,39 +130,54 @@ class MusicPlayerStore {
 			return;
 		}
 
+		const audio = this.audio;
+		const listen = (event: string, handler: () => void) => {
+			audio.addEventListener(event, () => {
+				if (this.audio === audio) handler();
+			});
+		};
+
 		this.audio.volume = this.state.volume;
 		this.audio.muted = this.state.isMuted;
 
-		this.audio.addEventListener("play", () => {
+		listen("play", () => {
 			this.state.isPlaying = true;
 			this.broadcastState();
 		});
 
-		this.audio.addEventListener("pause", () => {
+		listen("pause", () => {
 			this.state.isPlaying = false;
 			this.broadcastState();
 		});
 
-		this.audio.addEventListener("timeupdate", () => {
+		listen("timeupdate", () => {
 			if (this.audio) {
 				this.state.currentTime = this.audio.currentTime;
 				this.broadcastState();
 			}
 		});
 
-		this.audio.addEventListener("ended", () => {
+		listen("ended", () => {
 			this.handleAudioEnded();
 		});
 
-		this.audio.addEventListener("error", () => {
+		listen("error", () => {
 			this.handleAudioError();
 		});
 
-		this.audio.addEventListener("loadeddata", () => {
+		listen("loadedmetadata", () => this.updateDuration());
+		listen("durationchange", () => this.updateDuration());
+
+		listen("loadeddata", () => {
 			this.handleAudioLoaded();
 		});
 
-		this.audio.addEventListener("loadstart", () => {
+		listen("loadstart", () => {
+			clearTimeout(this.audioLoadTimer);
+			this.audioLoadTimer = setTimeout(() => {
+				if (this.audio === audio && this.state.isLoading)
+					this.handleAudioError();
+			}, 20000);
 			this.state.isLoading = true;
 			this.broadcastState();
 		});
@@ -167,7 +187,7 @@ class MusicPlayerStore {
 		if (this.state.isRepeating === 1) {
 			if (this.audio) {
 				this.audio.currentTime = 0;
-				this.audio.play().catch(() => {});
+				this.requestPlayback();
 			}
 		} else {
 			this.next(true);
@@ -175,42 +195,79 @@ class MusicPlayerStore {
 	}
 
 	private handleAudioError(): void {
+		clearTimeout(this.audioLoadTimer);
 		this.state.isLoading = false;
-		this.showError(i18n(Key.musicPlayerErrorSong));
-
-		if (this.state.playlist.length > 1) {
-			setTimeout(() => this.next(true), SKIP_ERROR_DELAY);
-		} else if (this.state.playlist.length <= 1) {
+		this.state.isPlaying = false;
+		this.failedSongs.add(this.state.currentSong.url);
+		clearTimeout(this.skipTimer);
+		const nextIndex = this.state.playlist.findIndex(
+			(song, index) =>
+				index !== this.state.currentIndex &&
+				!this.failedSongs.has(song.url),
+		);
+		if (nextIndex < 0) {
+			this.state.willAutoPlay = false;
 			this.showError(i18n(Key.musicPlayerErrorEmpty));
+			return;
 		}
-		this.broadcastState();
+		this.showError(i18n(Key.musicPlayerErrorSong));
+		const failedUrl = this.state.currentSong.url;
+		this.skipTimer = setTimeout(() => {
+			if (this.state.currentSong.url !== failedUrl || !this.audio) return;
+			this.state.currentIndex = nextIndex;
+			this.loadSong(
+				this.state.playlist[nextIndex],
+				this.state.willAutoPlay,
+			);
+		}, SKIP_ERROR_DELAY);
+	}
+
+	private updateDuration(): void {
+		const duration = this.audio?.duration;
+		if (duration && Number.isFinite(duration) && duration > 0) {
+			this.state.duration = duration;
+			this.state.currentSong = { ...this.state.currentSong, duration };
+			this.broadcastState();
+		}
+	}
+
+	private requestPlayback(): void {
+		const audio = this.audio;
+		if (!audio || !this.state.currentSong.url) return;
+		this.state.willAutoPlay = true;
+		const songUrl = this.state.currentSong.url;
+		void audio.play().catch((error: unknown) => {
+			if (
+				this.audio !== audio ||
+				this.state.currentSong.url !== songUrl ||
+				!this.state.willAutoPlay
+			)
+				return;
+			this.state.isPlaying = false;
+			this.state.isLoading = false;
+			this.state.autoplayFailed =
+				error instanceof Error && error.name === "NotAllowedError";
+			this.state.willAutoPlay = false;
+			this.showError(i18n(Key.musicPlayerErrorPlayback));
+		});
 	}
 
 	private handleAudioLoaded(): void {
+		clearTimeout(this.audioLoadTimer);
 		this.state.isLoading = false;
-		if (this.audio?.duration && this.audio.duration > 1) {
-			this.state.duration = Math.floor(this.audio.duration);
-			this.state.currentSong = {
-				...this.state.currentSong,
-				duration: this.state.duration,
-			};
-		}
-
-		if (this.state.willAutoPlay || this.state.isPlaying) {
-			const playPromise = this.audio?.play();
-			if (playPromise !== undefined) {
-				playPromise.catch(() => {
-					this.state.autoplayFailed = true;
-					this.state.isPlaying = false;
-				});
-			}
-		}
+		this.updateDuration();
+		if (this.state.willAutoPlay) this.requestPlayback();
 		this.broadcastState();
 	}
 
 	private loadVolumeFromStorage(): void {
 		if (typeof localStorage !== "undefined") {
-			const savedVolume = localStorage.getItem(STORAGE_KEY_VOLUME);
+			let savedVolume: string | null = null;
+			try {
+				savedVolume = localStorage.getItem(STORAGE_KEY_VOLUME);
+			} catch {
+				return;
+			}
 			if (savedVolume) {
 				const volume = parseFloat(savedVolume);
 				if (!isNaN(volume) && volume >= 0 && volume <= 1) {
@@ -285,23 +342,40 @@ class MusicPlayerStore {
 			.replace(":auth", "")
 			.replace(":r", Date.now().toString());
 
+		this.playlistController?.abort();
+		const controller = new AbortController();
+		this.playlistController = controller;
+		const timeout = setTimeout(() => controller.abort(), 15000);
 		try {
-			const res = await fetch(apiUrl);
+			const res = await fetch(apiUrl, { signal: controller.signal });
 			if (!res.ok) {
 				throw new Error("meting api error");
 			}
-			const list: any[] = await res.json();
-			this.state.playlist = list.map((song) =>
-				this.convertMetingSong(song),
-			);
+			const list: unknown = await res.json();
+			if (this.playlistController !== controller) return;
+			if (!Array.isArray(list))
+				throw new Error("Invalid playlist response");
+			this.state.playlist = list
+				.filter(
+					(song) =>
+						song && typeof song.url === "string" && song.url.trim(),
+				)
+				.map((song) => this.convertMetingSong(song));
 			this.state.isLoading = false;
 
 			if (this.state.playlist.length > 0) {
 				this.loadSong(this.state.playlist[0], false);
+			} else {
+				this.showError(i18n(Key.musicPlayerErrorEmpty));
 			}
-		} catch (e) {
+		} catch {
+			if (this.playlistController !== controller) return;
 			this.showError(i18n(Key.musicPlayerErrorPlaylist));
 			this.state.isLoading = false;
+		} finally {
+			clearTimeout(timeout);
+			if (this.playlistController === controller)
+				this.playlistController = undefined;
 		}
 		this.broadcastState();
 	}
@@ -346,18 +420,21 @@ class MusicPlayerStore {
 		if (!song) {
 			return;
 		}
-		if (song.url !== this.state.currentSong.url) {
-			this.state.currentSong = { ...song };
-			if (song.url) {
-				this.state.isLoading = true;
-			} else {
-				this.state.isLoading = false;
-			}
-		}
+		clearTimeout(this.skipTimer);
+		clearTimeout(this.audioLoadTimer);
+		this.state.currentSong = { ...song };
+		this.state.currentTime = 0;
+		this.state.duration = Number.isFinite(song.duration)
+			? Math.max(0, song.duration)
+			: 0;
+		this.state.isPlaying = false;
+		this.state.autoplayFailed = false;
+		this.state.isLoading = Boolean(song.url);
 		this.state.willAutoPlay = autoPlay;
 		if (this.audio) {
 			if (this.audio.src && song.url) {
-				this.audio.src = "";
+				this.audio.pause();
+				this.audio.removeAttribute("src");
 			}
 			this.audio.src = getAssetPath(song.url);
 			this.audio.load();
@@ -368,7 +445,8 @@ class MusicPlayerStore {
 	private showError(message: string): void {
 		this.state.errorMessage = message;
 		this.state.showError = true;
-		setTimeout(() => {
+		clearTimeout(this.errorTimer);
+		this.errorTimer = setTimeout(() => {
 			this.state.showError = false;
 			this.broadcastState();
 		}, 3000);
@@ -381,24 +459,31 @@ class MusicPlayerStore {
 	}
 
 	toggle(): void {
-		if (!this.audio || !this.state.currentSong.url) {
-			return;
-		}
-		if (this.state.isPlaying) {
-			this.audio.pause();
+		if (
+			this.state.isPlaying ||
+			(this.state.willAutoPlay && this.state.isLoading)
+		) {
+			this.pause();
 		} else {
-			this.audio.play().catch(() => {});
+			this.play();
 		}
 	}
 
 	play(): void {
-		if (!this.audio || !this.state.currentSong.url) {
+		if (!this.audio) return;
+		this.failedSongs.clear();
+		if (!this.state.currentSong.url) {
+			if (!this.state.isLoading)
+				void this.loadPlaylist().then(() => this.requestPlayback());
 			return;
 		}
-		this.audio.play().catch(() => {});
+		this.requestPlayback();
 	}
 
 	pause(): void {
+		this.state.willAutoPlay = false;
+		this.state.autoplayFailed = false;
+		clearTimeout(this.skipTimer);
 		if (!this.audio) {
 			return;
 		}
@@ -444,6 +529,7 @@ class MusicPlayerStore {
 	}
 
 	playIndex(index: number): void {
+		this.failedSongs.clear();
 		if (index < 0 || index >= this.state.playlist.length) {
 			return;
 		}
@@ -455,7 +541,7 @@ class MusicPlayerStore {
 		if (!this.audio) {
 			return;
 		}
-		if (time >= 0 && time <= this.state.duration) {
+		if (Number.isFinite(time) && time >= 0 && time <= this.state.duration) {
 			this.audio.currentTime = time;
 			this.state.currentTime = time;
 			this.broadcastState();
@@ -471,7 +557,11 @@ class MusicPlayerStore {
 			this.audio.muted = this.state.isMuted;
 		}
 		if (typeof localStorage !== "undefined") {
-			localStorage.setItem(STORAGE_KEY_VOLUME, String(clampedVolume));
+			try {
+				localStorage.setItem(STORAGE_KEY_VOLUME, String(clampedVolume));
+			} catch {
+				/* Playback works without saved preferences. */
+			}
 		}
 		this.broadcastState();
 	}
@@ -549,10 +639,8 @@ class MusicPlayerStore {
 		if (!this.audio) {
 			return;
 		}
-		const newTime = percent * this.state.duration;
-		this.audio.currentTime = newTime;
-		this.state.currentTime = newTime;
-		this.broadcastState();
+		if (!Number.isFinite(percent) || this.state.duration <= 0) return;
+		this.seek(Math.max(0, Math.min(1, percent)) * this.state.duration);
 	}
 
 	private broadcastState(): void {
@@ -573,6 +661,15 @@ class MusicPlayerStore {
 	}
 
 	destroy(): void {
+		this.playlistController?.abort();
+		this.playlistController = undefined;
+		clearTimeout(this.skipTimer);
+		clearTimeout(this.errorTimer);
+		clearTimeout(this.audioLoadTimer);
+		this.failedSongs.clear();
+		this.state.willAutoPlay = false;
+		this.state.isPlaying = false;
+		this.state.isLoading = false;
 		if (this.unregisterInteraction) {
 			this.unregisterInteraction();
 		}
