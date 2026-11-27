@@ -1,2 +1,2 @@
-export { default as MomentCard } from "./MomentCard.astro";
+export { default as MomentCard } from "./MomentCard.svelte";
 export * from "./types";

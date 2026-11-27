@@ -92,6 +92,8 @@ export const en: Translation = {
 	[Key.diaryNoResults]: "No matching moments",
 	[Key.diaryCount]: "entries",
 
+	[Key.diaryEditor]: "Owner editor",
+	[Key.diaryOffline]: "The latest entries could not be loaded. Showing the available entries.",
 	[Key.diaryTips]: "Only show the latest 30 diary entries",
 	[Key.diaryMinutesAgo]: "minutes ago",
 	[Key.diaryHoursAgo]: "hours ago",

@@ -1,0 +1,23 @@
+---
+import MainGridLayout from "@layouts/MainGridLayout.astro";
+
+import DiaryEditor from "../../components/features/diary/DiaryEditor.svelte";
+import { siteConfig } from "../../config";
+import Key from "../../i18n/i18nKey";
+import { i18n } from "../../i18n/translation";
+
+if (!siteConfig.featurePages.diary) {
+	return Astro.redirect("/404/");
+}
+---
+
+<MainGridLayout
+	title={i18n(Key.diaryEditor)}
+	description={i18n(Key.diarySubtitle)}
+>
+	<meta slot="head" name="robots" content="noindex,nofollow" />
+	<script>
+		import("../../scripts/right-sidebar-layout.js");
+	</script>
+	<DiaryEditor client:load />
+</MainGridLayout>

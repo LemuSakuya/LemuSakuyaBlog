@@ -94,6 +94,8 @@ export const zh_TW: Translation = {
 	[Key.diaryNoResults]: "沒有匹配的日記",
 	[Key.diaryCount]: "條日記",
 
+	[Key.diaryEditor]: "站主編輯",
+	[Key.diaryOffline]: "暫時無法取得最新日記，目前顯示已載入的內容。",
 	[Key.diaryTips]: "只展示最近30條日記",
 	[Key.diaryMinutesAgo]: "分鐘前",
 	[Key.diaryHoursAgo]: "小時前",

@@ -92,6 +92,8 @@ export const ja: Translation = {
 	[Key.diaryNoResults]: "一致するモーメントはありません",
 	[Key.diaryCount]: "件の日記のエントリー",
 
+	[Key.diaryEditor]: "管理者編集",
+	[Key.diaryOffline]: "最新の日記を取得できないため、読み込み済みの内容を表示しています。",
 	[Key.diaryTips]: "最新の30件の日記のエントリーのみを表示",
 	[Key.diaryMinutesAgo]: "分前",
 	[Key.diaryHoursAgo]: "時間前",

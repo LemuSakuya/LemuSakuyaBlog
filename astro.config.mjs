@@ -20,6 +20,7 @@ import remarkMath from "remark-math";
 import remarkSectionize from "remark-sectionize";
 
 import { siteConfig } from "./src/config.ts";
+import { diaryDevPlugin } from "./server/diary-dev.js";
 import { securityLanguages } from "./src/plugins/expressive-code/security-languages.mjs";
 import { pluginCustomCopyButton } from "./src/plugins/expressive-code/custom-copy-button.js";
 import { pluginLanguageBadge } from "./src/plugins/expressive-code/language-badge.ts";
@@ -192,7 +193,7 @@ export default defineConfig({
 		}),
 	},
 	vite: {
-		plugins: [tailwindcss()],
+		plugins: [tailwindcss(), diaryDevPlugin()],
 		// 开发环境预打包优化：将常用依赖提前编译，避免首次页面加载时 on-demand 编译导致 8s+ 的等待
 		optimizeDeps: {
 			include: [
