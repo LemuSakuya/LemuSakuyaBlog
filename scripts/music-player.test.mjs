@@ -248,3 +248,25 @@ test("play retries a failed playlist request", async () => {
 	assert.equal(store.getAudio().playCalls, 1);
 	store.destroy();
 });
+
+test("a second toggle cancels playback while a playlist retry is pending", async () => {
+	let resolveRetry;
+	let attempts = 0;
+	const { store } = setup({
+		mode: "meting",
+		fetchImpl: () => {
+			if (++attempts === 1) {
+				return Promise.reject(new Error("Offline"));
+			}
+			return new Promise((resolve) => { resolveRetry = resolve; });
+		},
+	});
+	await store.initialize();
+	store.toggle();
+	store.toggle();
+	resolveRetry({ ok: true, json: async () => [{ url: "/retry.mp3" }] });
+	await new Promise(setImmediate);
+	store.getAudio().dispatchEvent(new Event("loadeddata"));
+	assert.equal(store.getAudio().playCalls, 0);
+	store.destroy();
+});

@@ -256,27 +256,25 @@ export class MusicPlayerStore {
 		clearTimeout(this.audioLoadTimer);
 		this.state.isLoading = false;
 		this.updateDuration();
-		if (this.state.willAutoPlay) this.requestPlayback();
+		if (this.state.willAutoPlay && !this.state.isPlaying) this.requestPlayback();
 		this.broadcastState();
 	}
 
 	private loadVolumeFromStorage(): void {
-		if (typeof localStorage !== "undefined") {
-			let savedVolume: string | null = null;
-			try {
-				savedVolume = localStorage.getItem(STORAGE_KEY_VOLUME);
-			} catch {
-				return;
-			}
-			if (savedVolume) {
-				const volume = parseFloat(savedVolume);
-				if (!isNaN(volume) && volume >= 0 && volume <= 1) {
-					this.state.volume = volume;
-					this.state.isMuted = volume === 0;
-					if (this.audio) {
-						this.audio.volume = volume;
-						this.audio.muted = this.state.isMuted;
-					}
+		let savedVolume: string | null;
+		try {
+			savedVolume = localStorage.getItem(STORAGE_KEY_VOLUME);
+		} catch {
+			return;
+		}
+		if (savedVolume) {
+			const volume = parseFloat(savedVolume);
+			if (!isNaN(volume) && volume >= 0 && volume <= 1) {
+				this.state.volume = volume;
+				this.state.isMuted = volume === 0;
+				if (this.audio) {
+					this.audio.volume = volume;
+					this.audio.muted = this.state.isMuted;
 				}
 			}
 		}
@@ -364,14 +362,17 @@ export class MusicPlayerStore {
 			this.state.isLoading = false;
 
 			if (this.state.playlist.length > 0) {
-				this.loadSong(this.state.playlist[0], false);
+				this.loadSong(this.state.playlist[0], this.state.willAutoPlay);
+				if (this.state.willAutoPlay) this.requestPlayback();
 			} else {
+				this.state.willAutoPlay = false;
 				this.showError(i18n(Key.musicPlayerErrorEmpty));
 			}
 		} catch {
 			if (this.playlistController !== controller) return;
-			this.showError(i18n(Key.musicPlayerErrorPlaylist));
+			this.state.willAutoPlay = false;
 			this.state.isLoading = false;
+			this.showError(i18n(Key.musicPlayerErrorPlaylist));
 		} finally {
 			clearTimeout(timeout);
 			if (this.playlistController === controller)
@@ -473,8 +474,9 @@ export class MusicPlayerStore {
 		if (!this.audio) return;
 		this.failedSongs.clear();
 		if (!this.state.currentSong.url) {
-			if (!this.state.isLoading)
-				void this.loadPlaylist().then(() => this.requestPlayback());
+			this.state.willAutoPlay = true;
+			if (!this.state.isLoading) void this.loadPlaylist();
+			else this.broadcastState();
 			return;
 		}
 		this.requestPlayback();
@@ -488,6 +490,7 @@ export class MusicPlayerStore {
 			return;
 		}
 		this.audio.pause();
+		this.broadcastState();
 	}
 
 	next(autoPlay = true): void {
@@ -556,12 +559,10 @@ export class MusicPlayerStore {
 			this.audio.volume = clampedVolume;
 			this.audio.muted = this.state.isMuted;
 		}
-		if (typeof localStorage !== "undefined") {
-			try {
-				localStorage.setItem(STORAGE_KEY_VOLUME, String(clampedVolume));
-			} catch {
-				/* Playback works without saved preferences. */
-			}
+		try {
+			localStorage.setItem(STORAGE_KEY_VOLUME, String(clampedVolume));
+		} catch {
+			/* Playback works without saved preferences. */
 		}
 		this.broadcastState();
 	}

@@ -40,8 +40,10 @@ test("repaired display formulas pass strict KaTeX rendering", async () => {
 	];
 	for (const file of files) {
 		const source = await readFile(new URL(`../src/content/posts/study-notes/${file}`, import.meta.url), "utf8");
-		for (const match of source.matchAll(/\$\$([\s\S]*?)\$\$/g)) {
-			assert.doesNotThrow(() => katex.renderToString(match[1], {
+		const formulas = [...source.matchAll(/\$\$([\s\S]*?)\$\$|^\\\[\s*\n([\s\S]*?)^\\\]\s*$/gm)];
+		assert.ok(formulas.length > 0, file);
+		for (const match of formulas) {
+			assert.doesNotThrow(() => katex.renderToString(match[1] ?? match[2], {
 				displayMode: true, strict: "error", throwOnError: true,
 			}), file);
 		}
