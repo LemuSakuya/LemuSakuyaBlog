@@ -133,7 +133,9 @@ export class MusicPlayerStore {
 		const audio = this.audio;
 		const listen = (event: string, handler: () => void) => {
 			audio.addEventListener(event, () => {
-				if (this.audio === audio) handler();
+				if (this.audio === audio) {
+					handler();
+				}
 			});
 		};
 
@@ -175,8 +177,9 @@ export class MusicPlayerStore {
 		listen("loadstart", () => {
 			clearTimeout(this.audioLoadTimer);
 			this.audioLoadTimer = setTimeout(() => {
-				if (this.audio === audio && this.state.isLoading)
+				if (this.audio === audio && this.state.isLoading) {
 					this.handleAudioError();
+				}
 			}, 20000);
 			this.state.isLoading = true;
 			this.broadcastState();
@@ -213,7 +216,9 @@ export class MusicPlayerStore {
 		this.showError(i18n(Key.musicPlayerErrorSong));
 		const failedUrl = this.state.currentSong.url;
 		this.skipTimer = setTimeout(() => {
-			if (this.state.currentSong.url !== failedUrl || !this.audio) return;
+			if (this.state.currentSong.url !== failedUrl || !this.audio) {
+				return;
+			}
 			this.state.currentIndex = nextIndex;
 			this.loadSong(
 				this.state.playlist[nextIndex],
@@ -233,7 +238,9 @@ export class MusicPlayerStore {
 
 	private requestPlayback(): void {
 		const audio = this.audio;
-		if (!audio || !this.state.currentSong.url) return;
+		if (!audio || !this.state.currentSong.url) {
+			return;
+		}
 		this.state.willAutoPlay = true;
 		const songUrl = this.state.currentSong.url;
 		void audio.play().catch((error: unknown) => {
@@ -241,8 +248,9 @@ export class MusicPlayerStore {
 				this.audio !== audio ||
 				this.state.currentSong.url !== songUrl ||
 				!this.state.willAutoPlay
-			)
+			) {
 				return;
+			}
 			this.state.isPlaying = false;
 			this.state.isLoading = false;
 			this.state.autoplayFailed =
@@ -256,7 +264,9 @@ export class MusicPlayerStore {
 		clearTimeout(this.audioLoadTimer);
 		this.state.isLoading = false;
 		this.updateDuration();
-		if (this.state.willAutoPlay && !this.state.isPlaying) this.requestPlayback();
+		if (this.state.willAutoPlay && !this.state.isPlaying) {
+			this.requestPlayback();
+		}
 		this.broadcastState();
 	}
 
@@ -350,9 +360,12 @@ export class MusicPlayerStore {
 				throw new Error("meting api error");
 			}
 			const list: unknown = await res.json();
-			if (this.playlistController !== controller) return;
-			if (!Array.isArray(list))
+			if (this.playlistController !== controller) {
+				return;
+			}
+			if (!Array.isArray(list)) {
 				throw new Error("Invalid playlist response");
+			}
 			this.state.playlist = list
 				.filter(
 					(song) =>
@@ -363,20 +376,25 @@ export class MusicPlayerStore {
 
 			if (this.state.playlist.length > 0) {
 				this.loadSong(this.state.playlist[0], this.state.willAutoPlay);
-				if (this.state.willAutoPlay) this.requestPlayback();
+				if (this.state.willAutoPlay) {
+					this.requestPlayback();
+				}
 			} else {
 				this.state.willAutoPlay = false;
 				this.showError(i18n(Key.musicPlayerErrorEmpty));
 			}
 		} catch {
-			if (this.playlistController !== controller) return;
+			if (this.playlistController !== controller) {
+				return;
+			}
 			this.state.willAutoPlay = false;
 			this.state.isLoading = false;
 			this.showError(i18n(Key.musicPlayerErrorPlaylist));
 		} finally {
 			clearTimeout(timeout);
-			if (this.playlistController === controller)
+			if (this.playlistController === controller) {
 				this.playlistController = undefined;
+			}
 		}
 		this.broadcastState();
 	}
@@ -471,12 +489,17 @@ export class MusicPlayerStore {
 	}
 
 	play(): void {
-		if (!this.audio) return;
+		if (!this.audio) {
+			return;
+		}
 		this.failedSongs.clear();
 		if (!this.state.currentSong.url) {
 			this.state.willAutoPlay = true;
-			if (!this.state.isLoading) void this.loadPlaylist();
-			else this.broadcastState();
+			if (!this.state.isLoading) {
+				void this.loadPlaylist();
+			} else {
+				this.broadcastState();
+			}
 			return;
 		}
 		this.requestPlayback();
@@ -640,7 +663,9 @@ export class MusicPlayerStore {
 		if (!this.audio) {
 			return;
 		}
-		if (!Number.isFinite(percent) || this.state.duration <= 0) return;
+		if (!Number.isFinite(percent) || this.state.duration <= 0) {
+			return;
+		}
 		this.seek(Math.max(0, Math.min(1, percent)) * this.state.duration);
 	}
 

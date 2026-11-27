@@ -30,7 +30,9 @@
 	}
 
 	function handleKeyDown(event: KeyboardEvent) {
-		if (duration <= 0) return;
+		if (duration <= 0) {
+			return;
+		}
 		let time: number;
 		switch (event.key) {
 			case "ArrowLeft":
@@ -64,7 +66,9 @@
 		class="sidebar-progress-bar"
 		onpointerdown={handlePointer}
 		onpointermove={(event) => {
-			if (dragging) handlePointer(event);
+			if (dragging) {
+				handlePointer(event);
+			}
 		}}
 		onpointerup={() => {
 			dragging = false;
