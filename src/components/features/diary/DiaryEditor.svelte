@@ -151,7 +151,6 @@
 			await api("login", { password });
 			password = "";
 			authenticated = true;
-			// After session expiry keep the version the user actually edited.
 			if (!dirty || !version) {
 				setFeed(await api("feed"));
 			}
@@ -266,30 +265,35 @@
 	);
 </script>
 
-<div class="card-base w-full px-6 sm:px-9 py-6">
+<div class="card-base w-full px-6 sm:px-9 py-6 text-black/90 dark:text-white/90">
 	<header
-		class="rounded-xl bg-gradient-to-r from-[var(--primary)] to-[var(--primary-dark,var(--primary))] p-5 sm:p-6 flex flex-wrap justify-between items-center gap-4 mb-6"
+		class="flex flex-wrap items-start justify-between gap-4 pb-5 mb-6 border-b border-black/10 dark:border-white/10"
 	>
-		<div>
-			<h1 class="text-2xl sm:text-3xl font-bold text-white mb-1">
+		<div class="pl-4 relative">
+			<span
+				class="w-1 h-7 rounded-md bg-[var(--primary)] absolute left-0 top-1"
+			></span>
+			<h1
+				class="text-2xl sm:text-3xl font-bold text-black/90 dark:text-white/90 mb-1"
+			>
 				日記編輯室
 			</h1>
-			<p class="text-sm sm:text-base text-white/85">
+			<p class="text-sm text-black/55 dark:text-white/55">
 				即時撰寫、修改或刪除站內日記
 			</p>
 		</div>
-		<div class="flex items-center gap-3">
+		<div class="flex items-center gap-2">
 			<a
 				href="/diary/"
 				data-no-swup
-				class="px-3.5 py-2 rounded-lg bg-white/20 hover:bg-white/30 text-white text-sm font-medium transition-colors"
+				class="btn-regular h-9 px-3.5 rounded-lg text-sm font-medium inline-flex items-center gap-1"
 			>
 				← 返回日記
 			</a>
 			{#if authenticated}
 				<button
 					type="button"
-					class="px-3.5 py-2 rounded-lg bg-black/20 hover:bg-black/30 text-white text-sm font-medium transition-colors disabled:opacity-50"
+					class="btn-regular h-9 px-3.5 rounded-lg text-sm font-medium disabled:opacity-50"
 					disabled={busy}
 					onclick={logout}
 				>
@@ -302,31 +306,29 @@
 	{#if !ready}
 		<p
 			role="status"
-			class="py-10 text-center text-sm text-black/60 dark:text-white/60"
+			class="py-12 text-center text-sm text-black/55 dark:text-white/55"
 		>
 			正在確認登入狀態…
 		</p>
 	{:else if !authenticated}
-		<form
-			class="editor-panel max-w-md mx-auto my-6"
-			onsubmit={login}
-		>
-			<h2
-				class="text-lg font-semibold text-black/90 dark:text-white/90 mb-4"
-			>
-				站主身分驗證
-			</h2>
+		<form class="editor-panel max-w-md mx-auto my-8" onsubmit={login}>
+			<div class="flex items-center gap-2.5 mb-5">
+				<span class="w-1 h-5 rounded-md bg-[var(--primary)]"></span>
+				<h2 class="text-base font-bold text-black/90 dark:text-white/90 m-0">
+					站主身分驗證
+				</h2>
+			</div>
 			<label class="field">
-				<span>站主密碼</span>
+				<span class="field-label">站主密碼</span>
 				<input
 					type="password"
 					autocomplete="current-password"
 					required
-					placeholder="請輸入 DIARY_ADMIN_PASSWORD"
+					placeholder="請輸入站主密碼"
 					bind:value={password}
 				/>
 			</label>
-			<button type="submit" class="btn-primary w-full" disabled={busy}>
+			<button type="submit" class="btn-primary w-full mt-2" disabled={busy}>
 				{busy ? "登入中…" : "登入"}
 			</button>
 		</form>
@@ -342,8 +344,9 @@
 					＋ 新日記
 				</button>
 				<h2
-					class="text-xs font-semibold uppercase tracking-wider text-black/50 dark:text-white/50 mt-5 mb-2"
+					class="text-xs font-semibold tracking-wider text-black/50 dark:text-white/50 mt-5 mb-2.5 flex items-center gap-2"
 				>
+					<span class="w-1 h-3.5 rounded-full bg-[var(--primary)]"></span>
 					已發布日記（{entries.length}）
 				</h2>
 				<div class="entry-list">
@@ -364,7 +367,7 @@
 						</button>
 					{:else}
 						<p
-							class="text-xs text-black/50 dark:text-white/50 py-3 text-center"
+							class="text-xs text-black/50 dark:text-white/50 py-4 text-center"
 						>
 							尚無日記
 						</p>
@@ -379,16 +382,19 @@
 			>
 				<fieldset disabled={busy}>
 					<div
-						class="flex items-center justify-between gap-2 mb-4 pb-3 border-b border-black/10 dark:border-white/10"
+						class="flex items-center justify-between gap-2 mb-5 pb-3 border-b border-black/10 dark:border-white/10"
 					>
-						<h2
-							class="text-lg font-semibold text-black/90 dark:text-white/90 m-0"
-						>
-							{draft.id === undefined ? "寫新日記" : "編輯日記"}
-						</h2>
+						<div class="flex items-center gap-2.5">
+							<span class="w-1 h-5 rounded-md bg-[var(--primary)]"></span>
+							<h2
+								class="text-base font-bold text-black/90 dark:text-white/90 m-0"
+							>
+								{draft.id === undefined ? "寫新日記" : "編輯日記"}
+							</h2>
+						</div>
 						{#if dirty}
 							<span
-								class="text-xs px-2 py-0.5 rounded-full bg-[var(--btn-regular-bg)] text-[var(--btn-content)]"
+								class="text-xs px-2.5 py-0.5 rounded-full bg-[var(--btn-regular-bg)] text-[var(--btn-content)]"
 							>
 								尚未發布
 							</span>
@@ -396,12 +402,12 @@
 					</div>
 
 					<label class="field">
-						<span>標題 <small>選填</small></span>
+						<span class="field-label">標題 <small>選填</small></span>
 						<input maxlength="200" bind:value={draft.title} />
 					</label>
 
 					<label class="field">
-						<span>正文</span>
+						<span class="field-label">正文</span>
 						<textarea
 							required
 							rows="11"
@@ -412,7 +418,7 @@
 
 					<div class="row">
 						<label class="field">
-							<span>發布時間</span>
+							<span class="field-label">發布時間</span>
 							<input
 								required
 								type="datetime-local"
@@ -421,29 +427,31 @@
 							/>
 						</label>
 						<label class="field">
-							<span>標籤 <small>以逗號分隔</small></span>
+							<span class="field-label">標籤 <small>以逗號分隔</small></span>
 							<input bind:value={tags} />
 						</label>
 					</div>
 
 					<div class="row">
 						<label class="field">
-							<span>地點 <small>選填</small></span>
+							<span class="field-label">地點 <small>選填</small></span>
 							<input maxlength="150" bind:value={draft.location} />
 						</label>
 						<label class="field">
-							<span>心情 <small>選填</small></span>
+							<span class="field-label">心情 <small>選填</small></span>
 							<input maxlength="100" bind:value={draft.mood} />
 						</label>
 					</div>
 
 					<label class="field">
-						<span>原文連結 <small>選填</small></span>
+						<span class="field-label">原文連結 <small>選填</small></span>
 						<input type="url" bind:value={draft.link} />
 					</label>
 
 					<label class="field">
-						<span>配圖 <small>每張 3 MB 以內，最多 12 張</small></span>
+						<span class="field-label"
+							>配圖 <small>每張 3 MB 以內，最多 12 張</small></span
+						>
 						<input
 							type="file"
 							multiple
@@ -457,7 +465,7 @@
 					</label>
 
 					{#if files.length}
-						<small class="block -mt-2 mb-3 text-black/60 dark:text-white/60">
+						<small class="block -mt-2 mb-3 text-black/55 dark:text-white/55">
 							待上傳：{files.map((f) => f.name).join("、")}
 						</small>
 					{/if}
@@ -477,12 +485,14 @@
 							圖片網址與順序
 						</summary>
 						<label class="field mt-2">
-							<small>每行一張，移除該行即可移除配圖</small>
+							<small class="field-hint">每行一張，移除該行即可移除配圖</small>
 							<textarea rows="3" bind:value={imageUrls}></textarea>
 						</label>
 					</details>
 
-					<div class="flex flex-wrap items-center justify-between gap-3 pt-2">
+					<div
+						class="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-black/10 dark:border-white/10"
+					>
 						<button
 							type="submit"
 							class="btn-primary"
@@ -544,10 +554,15 @@
 	}
 
 	.editor-panel {
-		background: var(--card-bg);
-		border: 1px solid var(--line-divider);
+		background: rgba(0, 0, 0, 0.02);
+		border: 1px solid rgba(0, 0, 0, 0.08);
 		border-radius: var(--radius-large);
 		padding: clamp(1rem, 2.5vw, 1.5rem);
+	}
+
+	:global(.dark) .editor-panel {
+		background: rgba(255, 255, 255, 0.025);
+		border-color: rgba(255, 255, 255, 0.08);
 	}
 
 	fieldset {
@@ -560,15 +575,29 @@
 	.field {
 		display: block;
 		margin-bottom: 1rem;
-		font-size: 0.9rem;
-		font-weight: 600;
-		color: inherit;
 	}
 
-	.field small {
+	.field-label {
+		display: block;
+		font-size: 0.875rem;
+		font-weight: 600;
+		color: rgba(0, 0, 0, 0.78);
+	}
+
+	:global(.dark) .field-label {
+		color: rgba(255, 255, 255, 0.82);
+	}
+
+	.field-label small,
+	.field-hint {
 		font-size: 0.78rem;
 		font-weight: 400;
-		opacity: 0.65;
+		color: rgba(0, 0, 0, 0.45);
+	}
+
+	:global(.dark) .field-label small,
+	:global(.dark) .field-hint {
+		color: rgba(255, 255, 255, 0.45);
 	}
 
 	input,
@@ -576,24 +605,44 @@
 		display: block;
 		box-sizing: border-box;
 		width: 100%;
-		margin-top: 0.35rem;
-		padding: 0.6rem 0.8rem;
-		border-radius: 0.5rem;
-		border: 1px solid var(--line-color);
-		background: transparent;
-		color: inherit;
+		margin-top: 0.4rem;
+		padding: 0.6rem 0.85rem;
+		border-radius: 0.55rem;
+		border: 1px solid rgba(0, 0, 0, 0.12);
+		background: rgba(0, 0, 0, 0.025);
+		color: rgba(0, 0, 0, 0.9);
 		font: inherit;
-		font-weight: 400;
+		font-size: 0.92rem;
+		color-scheme: light;
 		transition:
 			border-color 0.15s ease,
-			box-shadow 0.15s ease;
+			box-shadow 0.15s ease,
+			background-color 0.15s ease;
+	}
+
+	:global(.dark) input,
+	:global(.dark) textarea {
+		border-color: rgba(255, 255, 255, 0.12);
+		background: rgba(255, 255, 255, 0.04);
+		color: rgba(255, 255, 255, 0.9);
+		color-scheme: dark;
+	}
+
+	input::placeholder,
+	textarea::placeholder {
+		color: rgba(0, 0, 0, 0.35);
+	}
+
+	:global(.dark) input::placeholder,
+	:global(.dark) textarea::placeholder {
+		color: rgba(255, 255, 255, 0.35);
 	}
 
 	input:focus,
 	textarea:focus {
 		outline: none;
 		border-color: var(--primary);
-		box-shadow: 0 0 0 2px color-mix(in oklch, var(--primary) 22%, transparent);
+		box-shadow: 0 0 0 2px color-mix(in oklch, var(--primary) 24%, transparent);
 	}
 
 	textarea {
@@ -614,28 +663,32 @@
 		border: 0;
 		background: var(--primary);
 		color: #fff;
-		border-radius: 0.5rem;
-		padding: 0.6rem 1.25rem;
+		border-radius: 0.55rem;
+		padding: 0.62rem 1.25rem;
 		font-weight: 600;
 		font-size: 0.92rem;
 		cursor: pointer;
 		transition: opacity 0.15s ease;
 	}
 
+	:global(.dark) .btn-primary {
+		color: #241922;
+	}
+
 	.btn-primary:hover:not(:disabled) {
-		opacity: 0.9;
+		opacity: 0.88;
 	}
 
 	.btn-primary:disabled {
-		opacity: 0.5;
+		opacity: 0.45;
 		cursor: not-allowed;
 	}
 
 	.btn-danger {
-		border: 1px solid oklch(0.6 0.2 25 / 0.45);
-		background: oklch(0.6 0.2 25 / 0.08);
-		color: oklch(0.55 0.2 25);
-		border-radius: 0.5rem;
+		border: 1px solid oklch(0.6 0.18 20 / 0.4);
+		background: oklch(0.6 0.18 20 / 0.08);
+		color: oklch(0.55 0.18 20);
+		border-radius: 0.55rem;
 		padding: 0.55rem 1rem;
 		font-weight: 600;
 		font-size: 0.88rem;
@@ -644,39 +697,46 @@
 	}
 
 	:global(.dark) .btn-danger {
-		color: oklch(0.75 0.18 25);
-		background: oklch(0.6 0.2 25 / 0.15);
+		color: oklch(0.76 0.15 20);
+		background: oklch(0.6 0.18 20 / 0.14);
 	}
 
 	.btn-danger:hover:not(:disabled) {
-		background: oklch(0.6 0.2 25 / 0.18);
+		background: oklch(0.6 0.18 20 / 0.2);
 	}
 
 	.btn-danger:disabled {
-		opacity: 0.5;
+		opacity: 0.45;
 		cursor: not-allowed;
 	}
 
 	.entry-list {
 		display: flex;
 		flex-direction: column;
-		gap: 0.25rem;
+		gap: 0.3rem;
 		max-height: 28rem;
 		overflow-y: auto;
 	}
 
 	.entry {
+		position: relative;
 		display: block;
 		text-align: left;
 		width: 100%;
 		border: 1px solid transparent;
-		border-radius: 0.5rem;
+		border-radius: 0.55rem;
 		background: transparent;
-		color: inherit;
-		padding: 0.55rem 0.7rem;
+		color: rgba(0, 0, 0, 0.82);
+		padding: 0.55rem 0.75rem;
 		cursor: pointer;
 		overflow-wrap: anywhere;
-		transition: background 0.15s ease;
+		transition:
+			background 0.15s ease,
+			border-color 0.15s ease;
+	}
+
+	:global(.dark) .entry {
+		color: rgba(255, 255, 255, 0.82);
 	}
 
 	.entry:hover:not(:disabled) {
@@ -698,7 +758,7 @@
 	.entry-date {
 		display: block;
 		font-size: 0.75rem;
-		opacity: 0.6;
+		opacity: 0.55;
 		margin-top: 0.15rem;
 	}
 
@@ -714,24 +774,28 @@
 		width: 68px;
 		object-fit: cover;
 		border-radius: 0.5rem;
-		border: 1px solid var(--line-divider);
+		border: 1px solid rgba(0, 0, 0, 0.1);
+	}
+
+	:global(.dark) .thumbs img {
+		border-color: rgba(255, 255, 255, 0.1);
 	}
 
 	.status {
 		padding: 0.75rem 1rem;
-		border-radius: 0.5rem;
-		font-size: 0.9rem;
+		border-radius: 0.55rem;
+		font-size: 0.88rem;
 		background: var(--btn-regular-bg);
 		color: var(--btn-content);
 	}
 
 	.status.status-error {
-		background: oklch(0.6 0.2 25 / 0.12);
-		color: oklch(0.5 0.2 25);
+		background: oklch(0.6 0.18 20 / 0.12);
+		color: oklch(0.5 0.18 20);
 	}
 
 	:global(.dark) .status.status-error {
-		color: oklch(0.78 0.16 25);
+		color: oklch(0.78 0.14 20);
 	}
 
 	@media (max-width: 720px) {
