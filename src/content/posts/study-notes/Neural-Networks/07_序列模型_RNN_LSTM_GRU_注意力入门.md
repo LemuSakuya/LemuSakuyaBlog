@@ -250,12 +250,14 @@ $$
 一个标准 LSTM 单元的计算（按时间步 t）为：
 
 $$
+\begin{aligned}
 i_t = \sigma(W_{xi} x_t + W_{hi} h_{t-1} + b_i)\\
 f_t = \sigma(W_{xf} x_t + W_{hf} h_{t-1} + b_f)\\
 o_t = \sigma(W_{xo} x_t + W_{ho} h_{t-1} + b_o)\\
-	ilde{c}_t = \tanh(W_{xg} x_t + W_{hg} h_{t-1} + b_g)\\
+\tilde{c}_t = \tanh(W_{xg} x_t + W_{hg} h_{t-1} + b_g)\\
 c_t = f_t \odot c_{t-1} + i_t \odot \tilde{c}_t\\
 h_t = o_t \odot \tanh(c_t)
+\end{aligned}
 $$
 
 解释：
@@ -274,10 +276,12 @@ $$
 GRU 的更新较为简洁，常见形式为：
 
 $$
+\begin{aligned}
 z_t = \sigma(W_{xz} x_t + W_{hz} h_{t-1})\\
 r_t = \sigma(W_{xr} x_t + W_{hr} h_{t-1})\\
-	ilde{h}_t = \tanh(W_{xh} x_t + W_{hh} (r_t \odot h_{t-1}))\\
+\tilde{h}_t = \tanh(W_{xh} x_t + W_{hh} (r_t \odot h_{t-1}))\\
 h_t = (1 - z_t) \odot h_{t-1} + z_t \odot \tilde{h}_t
+\end{aligned}
 $$
 
 其中 $z_t$ 是更新门，$r_t$ 是重置门。GRU 把 LSTM 的某些门合并，参数更少且结构更简单。
@@ -309,8 +313,10 @@ Transformer 的核心组件：
 位置编码用于把序列的位置信息注入 Transformer，常见的正弦/余弦位置编码为：
 
 $$
+\begin{aligned}
 PE_{(pos,2i)} = \sin(pos/10000^{2i/d_{model}})\\
 PE_{(pos,2i+1)} = \cos(pos/10000^{2i/d_{model}})
+\end{aligned}
 $$
 
 ---

@@ -25,21 +25,6 @@ const getLevelText = (level: string) => {
 	}
 };
 
-const getLevelWidth = (level: string) => {
-	switch (level) {
-		case "expert":
-			return "100%";
-		case "advanced":
-			return "80%";
-		case "intermediate":
-			return "60%";
-		case "beginner":
-			return "40%";
-		default:
-			return "20%";
-	}
-};
-
 const getLevelFromExperience = (
 	exp?: { years: number; months: number },
 ): "unstarted" | "beginner" | "intermediate" | "advanced" | "expert" => {

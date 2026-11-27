@@ -125,6 +125,8 @@ export const ja: Translation = {
 	[Key.musicPlayerErrorPlaylist]: "プレイリストを取得できませんでした。",
 	[Key.musicPlayerErrorSong]:
 		"曲の読み込みに失敗しました。次の曲を再生します。",
+	[Key.musicPlayerErrorPlayback]:
+		"再生できませんでした。再生ボタンを押して再試行してください。",
 	[Key.musicPlayerErrorEmpty]: "プレイリストに利用可能な曲がありません。",
 	[Key.unknownSong]: "不明な曲",
 	[Key.unknownArtist]: "不明なアーティスト",
